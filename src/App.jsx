@@ -117,6 +117,18 @@ const services = [
   },
 ]
 
+const smallBusinessServices = services.filter(({ title }) => [
+  'Affiches publicitaires', 'Création de flyers', 'Miniature YouTube',
+  'Montage vidéo simple', 'Création de logo professionnel',
+].includes(title))
+
+const businessServices = services.filter(({ title }) => [
+  'Création de sites web', 'Création de SaaS et outils web',
+  'Gestion des réseaux sociaux', 'Montage vidéo avancé',
+  'Création de boutique en ligne', 'Automatisation et assistants IA',
+  'Optimisation web et référencement',
+].includes(title))
+
 const steps = [
   ['01', 'On échange', 'Vous nous présentez votre idée, vos objectifs et vos besoins.'],
   ['02', 'On conçoit', 'Nous préparons une proposition claire et une direction créative.'],
@@ -199,12 +211,24 @@ function App() {
             <div><div className="eyebrow">CE QUE NOUS FAISONS</div><h2>Le digital, <span className="gradient-text">bien pensé.</span></h2></div>
             <p>Des solutions créatives et numériques pour donner de la force à vos projets. Prix de départ en FCFA.</p>
           </div>
+          <div className="audience-heading"><div><span className="eyebrow">OFFRES ACCESSIBLES</span><h3>Pour les petits commerçants et indépendants</h3><p>Des prestations simples pour lancer ou faire connaître votre activité sans gros budget.</p></div></div>
           <div className="service-grid">
-            {services.map(({ number, icon: Icon, title, description, tags, price, scope }) => (
+            {smallBusinessServices.map(({ number, icon: Icon, title, description, tags, price, scope }) => (
               <article className="service-card" key={number}>
                 <div className="card-top"><span className="service-icon"><Icon size={23} /></span><span className="card-number">{number}</span></div>
-                <h3>{title}</h3>
-                <p>{description}</p>
+                <h3>{title}</h3><p>{description}</p>
+                <div className="tag-list">{tags.map(tag => <span key={tag}>{tag}</span>)}</div>
+                <div className="service-price"><small>À partir de</small><strong>{price}</strong><span>{scope}</span></div>
+                <a href="#contact" className="card-link">Demander un devis <ArrowUpRight size={16} /></a>
+              </article>
+            ))}
+          </div>
+          <div className="audience-heading audience-heading-large"><div><span className="eyebrow">PROJETS SUR MESURE</span><h3>Pour les entreprises et projets ambitieux</h3><p>Des solutions plus complètes, avec cadrage du besoin et devis personnalisé.</p></div></div>
+          <div className="service-grid">
+            {businessServices.map(({ number, icon: Icon, title, description, tags, price, scope }) => (
+              <article className="service-card" key={number}>
+                <div className="card-top"><span className="service-icon"><Icon size={23} /></span><span className="card-number">{number}</span></div>
+                <h3>{title}</h3><p>{description}</p>
                 <div className="tag-list">{tags.map(tag => <span key={tag}>{tag}</span>)}</div>
                 <div className="service-price"><small>À partir de</small><strong>{price}</strong><span>{scope}</span></div>
                 <a href="#contact" className="card-link">Demander un devis <ArrowUpRight size={16} /></a>
