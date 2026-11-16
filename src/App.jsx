@@ -147,12 +147,74 @@ function Brand() {
 function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [sent, setSent] = useState(false)
+  const [onboardingComplete, setOnboardingComplete] = useState(false)
+  const [audience, setAudience] = useState('')
+  const [firstNeed, setFirstNeed] = useState('')
+  const [startingBudget, setStartingBudget] = useState('')
 
+  const isSmallAudience = ['Petit commerçant / vendeur indépendant', 'Entrepreneur / créateur de contenu', 'Particulier'].includes(audience)
   const closeMenu = () => setMenuOpen(false)
+
+  function handleOnboardingSubmit(event) {
+    event.preventDefault()
+    setOnboardingComplete(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   function handleSubmit(event) {
     event.preventDefault()
     setSent(true)
+  }
+
+  if (!onboardingComplete) {
+    return (
+      <main className="welcome-screen">
+        <div className="welcome-glow" />
+        <div className="welcome-card">
+          <Brand />
+          <div className="eyebrow welcome-eyebrow"><span className="status-dot" /> BIENVENUE CHEZ KREA STUDIO</div>
+          <h1>Commençons par <span className="gradient-text">vous.</span></h1>
+          <p className="welcome-intro">Répondez à ces quelques questions. Nous adapterons la page d'accueil à votre profil et à vos besoins.</p>
+          <form className="welcome-form" onSubmit={handleOnboardingSubmit}>
+            <label>1. Quel profil vous correspond ?
+              <select required value={audience} onChange={event => { setAudience(event.target.value); setFirstNeed('') }}>
+                <option value="">Choisir mon profil</option>
+                <option>Petit commerçant / vendeur indépendant</option>
+                <option>Entrepreneur / créateur de contenu</option>
+                <option>Particulier</option>
+                <option>PME / entreprise</option>
+                <option>Association / organisation</option>
+                <option>Grande entreprise / projet ambitieux</option>
+              </select>
+            </label>
+            <label>2. De quel service avez-vous surtout besoin ?
+              <select required value={firstNeed} onChange={event => setFirstNeed(event.target.value)} disabled={!audience}>
+                <option value="">Choisir votre besoin</option>
+                {(isSmallAudience
+                  ? ['Affiche ou flyer', 'Logo / identité visuelle', 'Montage vidéo court', 'Miniature YouTube', 'Autre besoin']
+                  : ['Site web', 'Boutique en ligne', 'Application / SaaS', 'Gestion des réseaux sociaux', 'Automatisation / assistant IA', 'Référencement web', 'Autre projet'])
+                  .map(item => <option key={item}>{item}</option>)}
+              </select>
+            </label>
+            <label>3. Quel budget envisagez-vous ?
+              <select required value={startingBudget} onChange={event => setStartingBudget(event.target.value)}>
+                <option value="">Choisir une fourchette</option>
+                <option>Moins de 5 000 FCFA</option>
+                <option>5 000 à 15 000 FCFA</option>
+                <option>15 000 à 50 000 FCFA</option>
+                <option>50 000 à 100 000 FCFA</option>
+                <option>100 000 à 250 000 FCFA</option>
+                <option>250 000 à 500 000 FCFA</option>
+                <option>Plus de 500 000 FCFA</option>
+                <option>Je souhaite être conseillé</option>
+              </select>
+            </label>
+            <button className="button button-primary submit-button" type="submit">Voir mon accueil personnalisé <ArrowUpRight size={18} /></button>
+          </form>
+          <p className="welcome-privacy">Ces réponses servent à personnaliser votre visite. Elles ne sont pas envoyées automatiquement.</p>
+        </div>
+      </main>
+    )
   }
 
   return (
@@ -208,10 +270,11 @@ function App() {
 
         <section className="services-section section container" id="services">
           <div className="section-heading">
-            <div><div className="eyebrow">CE QUE NOUS FAISONS</div><h2>Le digital, <span className="gradient-text">bien pensé.</span></h2></div>
-            <p>Des solutions créatives et numériques pour donner de la force à vos projets. Prix de départ en FCFA.</p>
+            <div><div className="eyebrow">VOTRE ESPACE KREA STUDIO</div><h2>{isSmallAudience ? <>Des solutions pour <span className="gradient-text">avancer.</span></> : <>Donnons de l'ampleur à <span className="gradient-text">vos projets.</span></>}</h2></div>
+            <p>{isSmallAudience ? 'Des prestations accessibles pour développer votre activité, à votre rythme.' : 'Des solutions numériques structurées pour les entreprises et les projets ambitieux.'} Prix de départ en FCFA.</p>
           </div>
-          <div className="audience-heading"><div><span className="eyebrow">OFFRES ACCESSIBLES</span><h3>Pour les petits commerçants et indépendants</h3><p>Des prestations simples pour lancer ou faire connaître votre activité sans gros budget.</p></div></div>
+          {isSmallAudience ? <>
+          <div className="audience-heading"><div><span className="eyebrow">VOTRE SÉLECTION</span><h3>Offres pour indépendants et petits commerces</h3><p>Nous avons adapté cette page à votre profil : {audience}.</p></div></div>
           <div className="service-grid">
             {smallBusinessServices.map(({ number, icon: Icon, title, description, tags, price, scope }) => (
               <article className="service-card" key={number}>
@@ -223,7 +286,8 @@ function App() {
               </article>
             ))}
           </div>
-          <div className="audience-heading audience-heading-large"><div><span className="eyebrow">PROJETS SUR MESURE</span><h3>Pour les entreprises et projets ambitieux</h3><p>Des solutions plus complètes, avec cadrage du besoin et devis personnalisé.</p></div></div>
+          </> : <>
+          <div className="audience-heading audience-heading-large"><div><span className="eyebrow">VOTRE SÉLECTION</span><h3>Solutions pour entreprises et projets ambitieux</h3><p>Nous avons adapté cette page à votre profil : {audience}.</p></div></div>
           <div className="service-grid">
             {businessServices.map(({ number, icon: Icon, title, description, tags, price, scope }) => (
               <article className="service-card" key={number}>
@@ -235,6 +299,7 @@ function App() {
               </article>
             ))}
           </div>
+          </>}
         </section>
 
         <section className="manifesto section">
