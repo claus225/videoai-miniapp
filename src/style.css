@@ -18,3 +18,10 @@
 .service-price strong{font:700 19px 'Space Grotesk';color:#8feaff}
 .service-price span{color:#8494ad;font-size:10px;line-height:1.5}
 .card-link{bottom:19px}
+
+.audience-heading{margin:34px 0 20px;padding:20px 22px;border:1px solid rgba(0,173,255,.2);border-radius:12px;background:linear-gradient(110deg,rgba(0,100,220,.12),rgba(8,13,24,.5))}
+.audience-heading h3{font:600 23px 'Space Grotesk';margin:9px 0 5px}
+.audience-heading p{color:#96a4bb;font-size:12px;line-height:1.7;margin:0}
+.audience-heading-large{margin-top:52px}
+.contact-form select{color:#f5f7ff}
+@media(max-width:600px){.audience-heading{padding:17px}.audience-heading h3{font-size:20px}}
