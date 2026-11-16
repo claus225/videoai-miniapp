@@ -9,6 +9,8 @@ import {
 const services = [
   {
     number: '01',
+    price: '10 000 FCFA',
+    scope: '1 visuel, 2 retouches. Impression non comprise.',
     icon: Megaphone,
     title: 'Affiches publicitaires',
     description: 'Des visuels qui attirent le regard et donnent une vraie identité à votre marque.',
@@ -16,6 +18,8 @@ const services = [
   },
   {
     number: '02',
+    price: '25 000 FCFA',
+    scope: 'Logo simple, 2 pistes et 2 retouches. Fichiers PNG/JPG.',
     icon: Palette,
     title: 'Création de logo professionnel',
     description: 'Un logo original et cohérent pour rendre votre marque reconnaissable.',
@@ -23,6 +27,8 @@ const services = [
   },
   {
     number: '03',
+    price: '90 000 FCFA',
+    scope: 'Site vitrine one-page responsive. Domaine et hébergement en supplément.',
     icon: Globe2,
     title: 'Création de sites web',
     description: 'Des sites modernes, rapides et adaptés aux téléphones comme aux ordinateurs.',
@@ -30,6 +36,8 @@ const services = [
   },
   {
     number: '04',
+    price: '300 000 FCFA',
+    scope: 'Prototype web simple. Fonctionnalités avancées et frais techniques sur devis.',
     icon: CloudUpload,
     title: 'Création de SaaS et outils web',
     description: 'Des applications web utiles pour transformer une idée en service numérique.',
@@ -37,6 +45,8 @@ const services = [
   },
   {
     number: '05',
+    price: '45 000 FCFA / mois',
+    scope: '8 publications/mois sur 1 réseau. Publicité payante non comprise.',
     icon: Smartphone,
     title: 'Gestion des réseaux sociaux',
     description: 'Une présence en ligne organisée avec des contenus adaptés à votre activité.',
@@ -44,6 +54,8 @@ const services = [
   },
   {
     number: '06',
+    price: '15 000 FCFA',
+    scope: '1 vidéo verticale jusqu’à 60 secondes. Rushes fournis par le client.',
     icon: Video,
     title: 'Montage vidéo court',
     description: 'Des vidéos montées pour présenter une activité ou dynamiser vos contenus.',
@@ -51,6 +63,8 @@ const services = [
   },
   {
     number: '07',
+    price: '180 000 FCFA',
+    scope: 'Boutique simple, jusqu’à 10 produits, commande par WhatsApp. Frais externes en supplément.',
     icon: ShoppingBag,
     title: 'Création de boutique en ligne',
     description: 'Une vitrine e-commerce pour présenter vos produits et recevoir des commandes.',
@@ -58,6 +72,8 @@ const services = [
   },
   {
     number: '08',
+    price: '85 000 FCFA',
+    scope: 'Assistant FAQ simple. Abonnements IA et connexions externes non compris.',
     icon: Bot,
     title: 'Automatisation et assistants IA',
     description: 'Des outils simples pour faciliter les tâches répétitives et les échanges clients.',
@@ -65,6 +81,8 @@ const services = [
   },
   {
     number: '09',
+    price: '30 000 FCFA',
+    scope: 'Optimisation de base jusqu’à 5 pages. Aucun classement Google garanti.',
     icon: Search,
     title: 'Optimisation web et référencement',
     description: 'Des améliorations de base pour rendre votre site plus clair et mieux structuré.',
@@ -152,16 +170,17 @@ function App() {
         <section className="services-section section container" id="services">
           <div className="section-heading">
             <div><div className="eyebrow">CE QUE NOUS FAISONS</div><h2>Le digital, <span className="gradient-text">bien pensé.</span></h2></div>
-            <p>Des solutions créatives et numériques pour donner de la force à vos projets.</p>
+            <p>Des solutions créatives et numériques pour donner de la force à vos projets. Prix de départ en FCFA.</p>
           </div>
           <div className="service-grid">
-            {services.map(({ number, icon: Icon, title, description, tags }) => (
+            {services.map(({ number, icon: Icon, title, description, tags, price, scope }) => (
               <article className="service-card" key={number}>
                 <div className="card-top"><span className="service-icon"><Icon size={23} /></span><span className="card-number">{number}</span></div>
                 <h3>{title}</h3>
                 <p>{description}</p>
                 <div className="tag-list">{tags.map(tag => <span key={tag}>{tag}</span>)}</div>
-                <a href="#contact" className="card-link">Parler de ce service <ArrowUpRight size={16} /></a>
+                <div className="service-price"><small>À partir de</small><strong>{price}</strong><span>{scope}</span></div>
+                <a href="#contact" className="card-link">Demander un devis <ArrowUpRight size={16} /></a>
               </article>
             ))}
           </div>
