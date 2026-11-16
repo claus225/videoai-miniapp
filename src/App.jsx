@@ -2,7 +2,8 @@ import { useState } from 'react'
 import {
   ArrowUpRight, Menu, X, Megaphone, Code2, CloudUpload,
   Crown, Sparkles, Check, Instagram, Facebook, Youtube,
-  Globe2, Layers3, MessageCircle, ChevronDown
+  Globe2, Layers3, MessageCircle, ChevronDown, Palette,
+  Video, Smartphone, ShoppingBag, Search, Bot
 } from 'lucide-react'
 
 const services = [
@@ -11,21 +12,63 @@ const services = [
     icon: Megaphone,
     title: 'Affiches publicitaires',
     description: 'Des visuels qui attirent le regard et donnent une vraie identité à votre marque.',
-    tags: ['Flyers', 'Affiches', 'Identité visuelle'],
+    tags: ['Flyers', 'Affiches', 'Visuels promotionnels'],
   },
   {
     number: '02',
+    icon: Palette,
+    title: 'Création de logo professionnel',
+    description: 'Un logo original et cohérent pour rendre votre marque reconnaissable.',
+    tags: ['Logo', 'Charte graphique', 'Déclinaisons'],
+  },
+  {
+    number: '03',
     icon: Globe2,
     title: 'Création de sites web',
     description: 'Des sites modernes, rapides et adaptés aux téléphones comme aux ordinateurs.',
     tags: ['Site vitrine', 'Landing page', 'Site professionnel'],
   },
   {
-    number: '03',
+    number: '04',
     icon: CloudUpload,
-    title: 'Création de SaaS',
+    title: 'Création de SaaS et outils web',
     description: 'Des applications web utiles pour transformer une idée en service numérique.',
     tags: ['Outils IA', 'Tableaux de bord', 'Automatisation'],
+  },
+  {
+    number: '05',
+    icon: Smartphone,
+    title: 'Gestion des réseaux sociaux',
+    description: 'Une présence en ligne organisée avec des contenus adaptés à votre activité.',
+    tags: ['Calendrier éditorial', 'Visuels', 'Conseils de publication'],
+  },
+  {
+    number: '06',
+    icon: Video,
+    title: 'Montage vidéo court',
+    description: 'Des vidéos montées pour présenter une activité ou dynamiser vos contenus.',
+    tags: ['Reels', 'TikTok', 'YouTube Shorts'],
+  },
+  {
+    number: '07',
+    icon: ShoppingBag,
+    title: 'Création de boutique en ligne',
+    description: 'Une vitrine e-commerce pour présenter vos produits et recevoir des commandes.',
+    tags: ['Catalogue', 'Fiches produits', 'Boutique'],
+  },
+  {
+    number: '08',
+    icon: Bot,
+    title: 'Automatisation et assistants IA',
+    description: 'Des outils simples pour faciliter les tâches répétitives et les échanges clients.',
+    tags: ['Chatbot', 'FAQ', 'Automatisation'],
+  },
+  {
+    number: '09',
+    icon: Search,
+    title: 'Optimisation web et référencement',
+    description: 'Des améliorations de base pour rendre votre site plus clair et mieux structuré.',
+    tags: ['SEO de base', 'Performance', 'Accessibilité'],
   },
 ]
 
@@ -147,7 +190,7 @@ function App() {
             <form className="contact-form" onSubmit={handleSubmit}>
               <label>Votre nom<input required name="name" placeholder="Comment vous appeler ?" /></label>
               <label>Votre adresse e-mail<input required type="email" name="email" placeholder="vous@exemple.com" /></label>
-              <label>Votre projet<select name="project" defaultValue=""><option value="" disabled>Choisir un service</option><option>Affiche publicitaire</option><option>Création de site web</option><option>Création de SaaS</option><option>Autre projet digital</option></select><ChevronDown className="select-chevron" size={16} /></label>
+              <label>Votre projet<select name="project" defaultValue=""><option value="" disabled>Choisir un service</option><option>Affiche publicitaire</option><option>Création de logo professionnel</option><option>Création de site web</option><option>Création de SaaS et outils web</option><option>Gestion des réseaux sociaux</option><option>Montage vidéo court</option><option>Création de boutique en ligne</option><option>Automatisation et assistants IA</option><option>Optimisation web et référencement</option><option>Autre projet digital</option></select><ChevronDown className="select-chevron" size={16} /></label>
               <label>Quelques détails<textarea required name="message" rows="3" placeholder="Parlez-nous de votre idée..." /></label>
               <button className="button button-primary submit-button" type="submit">Préparer ma demande <ArrowUpRight size={18} /></button>
               {sent && <p className="form-feedback"><Check size={16} /> Formulaire de démonstration : aucun message n'a été envoyé. Le contact sera activé après configuration.</p>}
