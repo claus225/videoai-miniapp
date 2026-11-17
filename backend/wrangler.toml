@@ -1,0 +1,14 @@
+name = "krea-studio-api"
+main = "src/index.js"
+compatibility_date = "2026-11-17"
+
+# Configure a real D1 database before deploying.
+# Replace the placeholder with the database ID from the Cloudflare dashboard.
+[[d1_databases]]
+binding = "DB"
+database_name = "krea-studio-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# Do not add production secrets here.
+# Add OAuth client secrets and TOKEN_ENCRYPTION_KEY with Wrangler secrets.
+# Cron triggers will be configured after the publishing scheduler is implemented.
