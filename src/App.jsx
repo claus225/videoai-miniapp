@@ -20,6 +20,7 @@ const navigation = [
   { id: 'channels', label: 'Comptes sociaux', Icon: Layers3 },
   { id: 'analytics', label: 'Statistiques', Icon: BarChart3 },
   { id: 'comments', label: 'Commentaires', Icon: MessageCircle },
+  { id: 'ai', label: 'Assistants IA', Icon: Sparkles },
 ]
 
 function App() {
@@ -189,6 +190,17 @@ function App() {
           {page === 'analytics' && <>
             <div className="page-heading"><div><div className="eyebrow">MESURE & PERFORMANCE</div><h1>Statistiques</h1><p>Suivez les résultats de vos publications sur les réseaux connectés.</p></div></div>
             <div className="panel empty-state tall"><div className="empty-icon"><BarChart3 size={24} /></div><strong>Les statistiques apparaîtront ici</strong><p>Connectez vos comptes et autorisez l’accès aux données analytiques. Aucun chiffre n’est affiché tant qu’il n’existe pas de données réelles.</p><button className="secondary-button" onClick={() => changePage('channels')}>Voir les connexions</button></div>
+          </>}
+
+          {page === 'ai' && <>
+            <div className="page-heading"><div><div className="eyebrow">INTELLIGENCE ARTIFICIELLE</div><h1>Assistants IA</h1><p>Utilisez Claude et les modèles OpenAI depuis votre espace KREA.</p></div></div>
+            <div className="notice-banner"><ShieldCheck size={20} /><div><strong>Passerelle sécurisée en préparation</strong><p>Les assistants utiliseront des connexions serveur. Les clés API ne seront jamais placées dans le navigateur. Aucune requête payante n'est envoyée pour le moment.</p></div></div>
+            <section className="channel-grid">
+              <div className="channel-card"><div className="channel-brand"><Sparkles size={22} /></div><div className="channel-info"><strong>Claude</strong><small><i /> API non configurée</small></div><span className="coming-soon">À CONFIGURER</span></div>
+              <div className="channel-card"><div className="channel-brand"><Activity size={22} /></div><div className="channel-info"><strong>ChatGPT / OpenAI</strong><small><i /> API non configurée</small></div><span className="coming-soon">À CONFIGURER</span></div>
+            </section>
+            <section className="panel empty-state tall"><div className="empty-icon"><Sparkles size={24} /></div><strong>Votre espace de conversation IA</strong><p>Le chat sera activé après la mise en place de l'authentification, des clés API côté serveur et des limites d'utilisation. Les abonnements ChatGPT et Claude ne comprennent pas automatiquement les crédits API : leur utilisation peut être facturée séparément.</p><button className="secondary-button" disabled>Assistant bientôt disponible</button></section>
+            <div className="api-note"><strong>Une seule passerelle, deux usages</strong><p>Claude pourra accéder aux outils KREA via MCP après configuration de son connecteur. ChatGPT pourra utiliser les modèles OpenAI dans KREA via l'API ; la connexion MCP directe dans ChatGPT dépend de l'offre et des droits du compte.</p></div>
           </>}
 
           {page === 'comments' && <>
