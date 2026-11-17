@@ -1,346 +1,206 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
-  ArrowUpRight, Menu, X, Megaphone, Code2, CloudUpload,
-  Crown, Sparkles, Check, Instagram, Facebook, Youtube,
-  Globe2, Layers3, MessageCircle, ChevronDown, Palette,
-  Video, Smartphone, ShoppingBag, Search, Bot
+  Activity, BarChart3, CalendarDays, Check, ChevronDown, Clock3,
+  Facebook, FileText, HelpCircle, Home, Instagram, Layers3, Link2,
+  MessageCircle, Plus, Send, Settings, ShieldCheck, Sparkles,
+  Video, X, Youtube, Menu
 } from 'lucide-react'
 
-const services = [
-  {
-    number: '01',
-    price: '3 000 FCFA',
-    scope: '1 visuel simple, 1 retouche. Impression non comprise.',
-    icon: Megaphone,
-    title: 'Affiches publicitaires',
-    description: 'Des visuels accessibles pour annoncer une offre ou présenter votre activité.',
-    tags: ['Affiches', 'Visuels promotionnels'],
-  },
-  {
-    number: '02',
-    price: '4 000 FCFA',
-    scope: '1 flyer, 2 retouches. Impression non comprise.',
-    icon: Palette,
-    title: 'Création de flyers',
-    description: 'Un support clair pour faire connaître vos produits, événements et services.',
-    tags: ['Flyers', 'Promotions', 'Événements'],
-  },
-  {
-    number: '03',
-    price: '3 000 FCFA',
-    scope: '1 miniature personnalisée, 1 retouche.',
-    icon: Video,
-    title: 'Miniature YouTube',
-    description: 'Une miniature conçue pour présenter votre vidéo de façon claire et attractive.',
-    tags: ['YouTube', 'Miniatures', 'Visuels'],
-  },
-  {
-    number: '04',
-    price: '15 000 FCFA',
-    scope: 'Logo simple, 2 propositions et 2 retouches. Fichiers PNG/JPG.',
-    icon: Palette,
-    title: 'Création de logo professionnel',
-    description: 'Un logo original et cohérent pour rendre votre marque reconnaissable.',
-    tags: ['Logo', 'Identité visuelle'],
-  },
-  {
-    number: '05',
-    price: '100 000 FCFA',
-    scope: 'Site vitrine responsive jusqu’à 5 pages. Domaine et hébergement en supplément.',
-    icon: Globe2,
-    title: 'Création de sites web',
-    description: 'Des sites modernes, rapides et adaptés aux téléphones comme aux ordinateurs.',
-    tags: ['Site vitrine', 'Landing page', 'Site professionnel'],
-  },
-  {
-    number: '06',
-    price: '250 000 FCFA',
-    scope: 'Prototype web simple. Fonctionnalités et frais techniques définis au devis.',
-    icon: CloudUpload,
-    title: 'Création de SaaS et outils web',
-    description: 'Des applications web utiles pour transformer une idée en service numérique.',
-    tags: ['Outils IA', 'Tableaux de bord', 'Automatisation'],
-  },
-  {
-    number: '07',
-    price: '30 000 FCFA / mois',
-    scope: '8 publications par mois sur 1 réseau. Publicité payante non comprise.',
-    icon: Smartphone,
-    title: 'Gestion des réseaux sociaux',
-    description: 'Une présence en ligne organisée avec des contenus adaptés à votre activité.',
-    tags: ['Calendrier éditorial', 'Visuels', 'Conseils de publication'],
-  },
-  {
-    number: '08',
-    price: '5 000 FCFA',
-    scope: '1 vidéo verticale simple jusqu’à 30 secondes. Rushes fournis par le client.',
-    icon: Video,
-    title: 'Montage vidéo simple',
-    description: 'Un montage court pour vos contenus et présentations.',
-    tags: ['Reels', 'TikTok', 'Shorts'],
-  },
-  {
-    number: '09',
-    price: '15 000 FCFA',
-    scope: '1 vidéo jusqu’à 60 secondes avec sous-titres simples. Rushes fournis.',
-    icon: Video,
-    title: 'Montage vidéo avancé',
-    description: 'Un montage plus travaillé pour dynamiser vos contenus courts.',
-    tags: ['Sous-titres', 'Transitions', 'Format vertical'],
-  },
-  {
-    number: '10',
-    price: '180 000 FCFA',
-    scope: 'Boutique simple jusqu’à 10 produits, commandes WhatsApp. Frais externes en supplément.',
-    icon: ShoppingBag,
-    title: 'Création de boutique en ligne',
-    description: 'Une vitrine e-commerce pour présenter vos produits et recevoir des commandes.',
-    tags: ['Catalogue', 'Fiches produits', 'Boutique'],
-  },
-  {
-    number: '11',
-    price: '100 000 FCFA',
-    scope: 'Assistant FAQ simple. Abonnements IA et connexions externes non compris.',
-    icon: Bot,
-    title: 'Automatisation et assistants IA',
-    description: 'Des outils simples pour faciliter les tâches répétitives et les échanges clients.',
-    tags: ['Chatbot', 'FAQ', 'Automatisation'],
-  },
-  {
-    number: '12',
-    price: '20 000 FCFA',
-    scope: 'Optimisation de base jusqu’à 5 pages. Aucun classement Google garanti.',
-    icon: Search,
-    title: 'Optimisation web et référencement',
-    description: 'Des améliorations de base pour rendre votre site plus clair et mieux structuré.',
-    tags: ['SEO de base', 'Performance', 'Accessibilité'],
-  },
+const channels = [
+  { id: 'instagram', name: 'Instagram', Icon: Instagram, color: '#e879a8' },
+  { id: 'facebook', name: 'Facebook', Icon: Facebook, color: '#6ba7ff' },
+  { id: 'youtube', name: 'YouTube', Icon: Youtube, color: '#ff7777' },
+  { id: 'tiktok', name: 'TikTok', Icon: Video, color: '#e7eaf2' },
 ]
 
-const smallBusinessServices = services.filter(({ title }) => [
-  'Affiches publicitaires', 'Création de flyers', 'Miniature YouTube',
-  'Montage vidéo simple', 'Création de logo professionnel',
-].includes(title))
-
-const businessServices = services.filter(({ title }) => [
-  'Création de sites web', 'Création de SaaS et outils web',
-  'Gestion des réseaux sociaux', 'Montage vidéo avancé',
-  'Création de boutique en ligne', 'Automatisation et assistants IA',
-  'Optimisation web et référencement',
-].includes(title))
-
-const steps = [
-  ['01', 'On échange', 'Vous nous présentez votre idée, vos objectifs et vos besoins.'],
-  ['02', 'On conçoit', 'Nous préparons une proposition claire et une direction créative.'],
-  ['03', 'On réalise', 'Nous construisons votre projet et vous le présentons pour validation.'],
+const navigation = [
+  { id: 'overview', label: 'Vue générale', Icon: Home },
+  { id: 'compose', label: 'Créer une publication', Icon: Plus },
+  { id: 'calendar', label: 'Calendrier', Icon: CalendarDays },
+  { id: 'channels', label: 'Comptes sociaux', Icon: Layers3 },
+  { id: 'analytics', label: 'Statistiques', Icon: BarChart3 },
+  { id: 'comments', label: 'Commentaires', Icon: MessageCircle },
 ]
-
-function Brand() {
-  return (
-    <a className="brand" href="#accueil" aria-label="KREA STUDIO, accueil">
-      <span className="brand-mark"><Crown size={19} strokeWidth={1.8} /><b>K</b></span>
-      <span className="brand-name">KREA<span>STUDIO</span><small>CI · DIGITAL · WEB · IA</small></span>
-    </a>
-  )
-}
 
 function App() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [sent, setSent] = useState(false)
-  const [onboardingComplete, setOnboardingComplete] = useState(false)
-  const [audience, setAudience] = useState('')
-  const [firstNeed, setFirstNeed] = useState('')
-  const [startingBudget, setStartingBudget] = useState('')
+  const [page, setPage] = useState('overview')
+  const [mobileMenu, setMobileMenu] = useState(false)
+  const [posts, setPosts] = useState([])
+  const [notice, setNotice] = useState('')
+  const [modal, setModal] = useState('')
+  const [selectedChannels, setSelectedChannels] = useState(['instagram', 'facebook', 'youtube', 'tiktok'])
+  const [content, setContent] = useState('')
+  const [scheduledAt, setScheduledAt] = useState('')
+  const [mediaName, setMediaName] = useState('')
 
-  const isSmallAudience = ['Petit commerçant / vendeur indépendant', 'Entrepreneur / créateur de contenu', 'Particulier'].includes(audience)
-  const closeMenu = () => setMenuOpen(false)
+  const scheduledCount = posts.filter(post => post.status === 'scheduled').length
+  const draftCount = posts.filter(post => post.status === 'draft').length
+  const connectedCount = 0
+  const selectedNames = channels.filter(channel => selectedChannels.includes(channel.id)).map(channel => channel.name)
 
-  function handleOnboardingSubmit(event) {
-    event.preventDefault()
-    setOnboardingComplete(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  const upcomingPosts = useMemo(
+    () => [...posts].filter(post => post.status === 'scheduled').sort((a, b) => a.date.localeCompare(b.date)),
+    [posts]
+  )
+
+  function changePage(id) {
+    setPage(id)
+    setMobileMenu(false)
+    setNotice('')
   }
 
-  function handleSubmit(event) {
-    event.preventDefault()
-    setSent(true)
+  function toggleChannel(id) {
+    setSelectedChannels(current => current.includes(id)
+      ? current.filter(item => item !== id)
+      : [...current, id])
   }
 
-  if (!onboardingComplete) {
+  function savePost(status) {
+    if (!content.trim()) {
+      setNotice('Ajoutez un texte avant d’enregistrer votre publication.')
+      return
+    }
+    if (status === 'scheduled' && (!scheduledAt || new Date(scheduledAt) <= new Date())) {
+      setNotice('Choisissez une date et une heure dans le futur.')
+      return
+    }
+    if (status === 'scheduled' && selectedChannels.length === 0) {
+      setNotice('Sélectionnez au moins un réseau social.')
+      return
+    }
+    setPosts(current => [{
+      id: Date.now(),
+      content: content.trim(),
+      date: status === 'scheduled' ? new Date(scheduledAt).toISOString() : new Date().toISOString(),
+      channels: status === 'scheduled' ? [...selectedChannels] : [],
+      status,
+    }, ...current])
+    setContent('')
+    setScheduledAt('')
+    setMediaName('')
+    setNotice(status === 'scheduled'
+      ? 'Publication enregistrée dans le calendrier de démonstration. Aucun réseau n’a reçu le contenu.'
+      : 'Brouillon enregistré dans cette session.')
+    setPage(status === 'scheduled' ? 'calendar' : 'overview')
+  }
+
+  function openConnection(channelName) {
+    setModal(channelName)
+  }
+
+  function renderPost(post) {
     return (
-      <main className="welcome-screen">
-        <div className="welcome-glow" />
-        <div className="welcome-card">
-          <Brand />
-          <div className="eyebrow welcome-eyebrow"><span className="status-dot" /> BIENVENUE CHEZ KREA STUDIO</div>
-          <h1>Commençons par <span className="gradient-text">vous.</span></h1>
-          <p className="welcome-intro">Répondez à ces quelques questions. Nous adapterons la page d'accueil à votre profil et à vos besoins.</p>
-          <form className="welcome-form" onSubmit={handleOnboardingSubmit}>
-            <label>1. Quel profil vous correspond ?
-              <select required value={audience} onChange={event => { setAudience(event.target.value); setFirstNeed('') }}>
-                <option value="">Choisir mon profil</option>
-                <option>Petit commerçant / vendeur indépendant</option>
-                <option>Entrepreneur / créateur de contenu</option>
-                <option>Particulier</option>
-                <option>PME / entreprise</option>
-                <option>Association / organisation</option>
-                <option>Grande entreprise / projet ambitieux</option>
-              </select>
-            </label>
-            <label>2. De quel service avez-vous surtout besoin ?
-              <select required value={firstNeed} onChange={event => setFirstNeed(event.target.value)} disabled={!audience}>
-                <option value="">Choisir votre besoin</option>
-                {(isSmallAudience
-                  ? ['Affiche ou flyer', 'Logo / identité visuelle', 'Montage vidéo court', 'Miniature YouTube', 'Autre besoin']
-                  : ['Site web', 'Boutique en ligne', 'Application / SaaS', 'Gestion des réseaux sociaux', 'Automatisation / assistant IA', 'Référencement web', 'Autre projet'])
-                  .map(item => <option key={item}>{item}</option>)}
-              </select>
-            </label>
-            <label>3. Quel budget envisagez-vous ?
-              <select required value={startingBudget} onChange={event => setStartingBudget(event.target.value)}>
-                <option value="">Choisir une fourchette</option>
-                <option>Moins de 5 000 FCFA</option>
-                <option>5 000 à 15 000 FCFA</option>
-                <option>15 000 à 50 000 FCFA</option>
-                <option>50 000 à 100 000 FCFA</option>
-                <option>100 000 à 250 000 FCFA</option>
-                <option>250 000 à 500 000 FCFA</option>
-                <option>Plus de 500 000 FCFA</option>
-                <option>Je souhaite être conseillé</option>
-              </select>
-            </label>
-            <button className="button button-primary submit-button" type="submit">Voir mon accueil personnalisé <ArrowUpRight size={18} /></button>
-          </form>
-          <p className="welcome-privacy">Ces réponses servent à personnaliser votre visite. Elles ne sont pas envoyées automatiquement.</p>
+      <article className="post-row" key={post.id}>
+        <div className="post-preview"><FileText size={18} /></div>
+        <div className="post-main">
+          <p>{post.content}</p>
+          <div className="post-meta">
+            <span>{new Date(post.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+            {post.channels.length > 0 && <span>· {post.channels.map(id => channels.find(channel => channel.id === id)?.name).join(', ')}</span>}
+          </div>
         </div>
-      </main>
+        <span className={`status-pill ${post.status}`}>{post.status === 'scheduled' ? 'Programmé (démo)' : 'Brouillon'}</span>
+      </article>
     )
   }
 
   return (
-    <div className="site-shell">
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
-      <header className="topbar">
-        <div className="container nav-wrap">
-          <Brand />
-          <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}>
-            {menuOpen ? <X /> : <Menu />}
-          </button>
-          <nav className={menuOpen ? 'nav-links open' : 'nav-links'}>
-            <a href="#accueil" onClick={closeMenu}>Accueil</a>
-            <a href="#services" onClick={closeMenu}>Services</a>
-            <a href="#methode" onClick={closeMenu}>Notre méthode</a>
-            <a className="nav-cta" href="#contact" onClick={closeMenu}>Parlons du projet <ArrowUpRight size={16} /></a>
-          </nav>
+    <div className="app-frame">
+      <aside className={mobileMenu ? 'sidebar open' : 'sidebar'}>
+        <div className="brand">
+          <div className="brand-symbol">K<span>.</span></div>
+          <div><strong>KREA STUDIO</strong><small>SOCIAL MANAGER</small></div>
+          <button className="close-menu" onClick={() => setMobileMenu(false)} aria-label="Fermer"><X size={18} /></button>
         </div>
-      </header>
+        <div className="workspace-label">ESPACE DE TRAVAIL</div>
+        <nav className="side-nav">
+          {navigation.map(({ id, label, Icon }) => (
+            <button key={id} className={page === id ? 'nav-item active' : 'nav-item'} onClick={() => changePage(id)}>
+              <Icon size={18} /><span>{label}</span>
+              {id === 'calendar' && scheduledCount > 0 && <b>{scheduledCount}</b>}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="help-card"><div className="help-icon"><ShieldCheck size={18} /></div><strong>Vos comptes restent protégés</strong><p>Les connexions utiliseront les autorisations officielles des plateformes.</p></div>
+          <button className="nav-item" onClick={() => setModal('Paramètres')}><Settings size={18} /><span>Paramètres</span></button>
+          <div className="profile-row"><div className="avatar">K</div><div><strong>KREA STUDIO</strong><small>Compte administrateur</small></div><ChevronDown size={15} /></div>
+        </div>
+      </aside>
 
-      <main>
-        <section className="hero container" id="accueil">
-          <div className="hero-copy">
-            <div className="eyebrow"><span className="status-dot" /> STUDIO DIGITAL · CÔTE D'IVOIRE</div>
-            <h1>Vos idées méritent<br />de devenir <span className="gradient-text">réelles.</span></h1>
-            <p className="hero-lead">Nous transformons vos idées en projets digitaux avec du design, du web et de l'intelligence artificielle.</p>
-            <div className="hero-actions">
-              <a className="button button-primary" href="#services">Découvrir nos services <ArrowUpRight size={18} /></a>
-              <a className="text-link" href="#contact">Démarrer un projet <span>↗</span></a>
-            </div>
-            <div className="hero-proof">
-              <span className="proof-icon"><Sparkles size={17} /></span>
-              <span><b>Créativité. Technologie. Ambition.</b><small>Une idée à la fois, un projet à la fois.</small></span>
-            </div>
-          </div>
-          <div className="hero-art" aria-label="Emblème KREA STUDIO">
-            <div className="orbit orbit-a" />
-            <div className="orbit orbit-b" />
-            <div className="logo-halo">
-              <div className="logo-crown"><Crown size={66} strokeWidth={1.15} /></div>
-              <div className="logo-k">K<span className="play-cut">▶</span></div>
-              <div className="logo-word">KREA</div>
-              <div className="logo-studio">STUDIO</div>
-              <div className="logo-caption">DIGITAL <i /> WEB <i /> IA</div>
-              <div className="logo-line" />
-              <div className="logo-tagline">Transformons vos idées<br />en projets digitaux</div>
-            </div>
-            <div className="floating-chip chip-top"><Code2 size={16} /> WEB & IA</div>
-            <div className="floating-chip chip-bottom"><Sparkles size={16} /> CRÉATIVITÉ SANS LIMITE</div>
-          </div>
-        </section>
+      {mobileMenu && <button className="mobile-scrim" onClick={() => setMobileMenu(false)} aria-label="Fermer le menu" />}
 
-        <section className="services-section section container" id="services">
-          <div className="section-heading">
-            <div><div className="eyebrow">VOTRE ESPACE KREA STUDIO</div><h2>{isSmallAudience ? <>Des solutions pour <span className="gradient-text">avancer.</span></> : <>Donnons de l'ampleur à <span className="gradient-text">vos projets.</span></>}</h2></div>
-            <p>{isSmallAudience ? 'Des prestations accessibles pour développer votre activité, à votre rythme.' : 'Des solutions numériques structurées pour les entreprises et les projets ambitieux.'} Prix de départ en FCFA.</p>
-          </div>
-          {isSmallAudience ? <>
-          <div className="audience-heading"><div><span className="eyebrow">VOTRE SÉLECTION</span><h3>Offres pour indépendants et petits commerces</h3><p>Nous avons adapté cette page à votre profil : {audience}.</p></div></div>
-          <div className="service-grid">
-            {smallBusinessServices.map(({ number, icon: Icon, title, description, tags, price, scope }) => (
-              <article className="service-card" key={number}>
-                <div className="card-top"><span className="service-icon"><Icon size={23} /></span><span className="card-number">{number}</span></div>
-                <h3>{title}</h3><p>{description}</p>
-                <div className="tag-list">{tags.map(tag => <span key={tag}>{tag}</span>)}</div>
-                <div className="service-price"><small>À partir de</small><strong>{price}</strong><span>{scope}</span></div>
-                <a href="#contact" className="card-link">Demander un devis <ArrowUpRight size={16} /></a>
-              </article>
-            ))}
-          </div>
-          </> : <>
-          <div className="audience-heading audience-heading-large"><div><span className="eyebrow">VOTRE SÉLECTION</span><h3>Solutions pour entreprises et projets ambitieux</h3><p>Nous avons adapté cette page à votre profil : {audience}.</p></div></div>
-          <div className="service-grid">
-            {businessServices.map(({ number, icon: Icon, title, description, tags, price, scope }) => (
-              <article className="service-card" key={number}>
-                <div className="card-top"><span className="service-icon"><Icon size={23} /></span><span className="card-number">{number}</span></div>
-                <h3>{title}</h3><p>{description}</p>
-                <div className="tag-list">{tags.map(tag => <span key={tag}>{tag}</span>)}</div>
-                <div className="service-price"><small>À partir de</small><strong>{price}</strong><span>{scope}</span></div>
-                <a href="#contact" className="card-link">Demander un devis <ArrowUpRight size={16} /></a>
-              </article>
-            ))}
-          </div>
+      <main className="main-area">
+        <header className="top-header">
+          <button className="mobile-menu-button" onClick={() => setMobileMenu(true)} aria-label="Ouvrir le menu"><Menu /></button>
+          <div className="breadcrumb">KREA STUDIO <span>/</span> {navigation.find(item => item.id === page)?.label || 'Paramètres'}</div>
+          <div className="header-right"><span className="demo-tag"><span /> MODE APERÇU</span><button className="icon-button" onClick={() => setModal('Centre d’aide')} aria-label="Aide"><HelpCircle size={18} /></button><div className="avatar small">K</div></div>
+        </header>
+
+        <div className="content-wrap">
+          {page === 'overview' && <>
+            <div className="page-heading"><div><div className="eyebrow">VOTRE ESPACE SOCIAL</div><h1>Vue générale</h1><p>Préparez et organisez vos contenus depuis un seul endroit.</p></div><button className="primary-button" onClick={() => changePage('compose')}><Plus size={17} /> Nouvelle publication</button></div>
+            <div className="notice-banner"><Sparkles size={19} /><div><strong>Bienvenue dans KREA STUDIO Social Manager</strong><p>Le tableau de bord est en mode aperçu. Les connexions officielles et l’envoi automatique seront activés après la configuration des API et du serveur.</p></div></div>
+            <section className="stats-grid">
+              <div className="stat-card"><div className="stat-icon blue"><Layers3 size={19} /></div><span>Comptes connectés</span><strong>{connectedCount}<small> / 4</small></strong><em>Aucun compte connecté</em></div>
+              <div className="stat-card"><div className="stat-icon violet"><CalendarDays size={19} /></div><span>Publications programmées</span><strong>{scheduledCount}</strong><em>Dans cette session de démonstration</em></div>
+              <div className="stat-card"><div className="stat-icon cyan"><FileText size={19} /></div><span>Brouillons</span><strong>{draftCount}</strong><em>Enregistrés dans cette session</em></div>
+              <div className="stat-card"><div className="stat-icon green"><Activity size={19} /></div><span>Statistiques disponibles</span><strong>—</strong><em>À activer après connexion</em></div>
+            </section>
+            <div className="section-title-row"><div><h2>Vos réseaux sociaux</h2><p>Connectez chaque plateforme avec son autorisation officielle.</p></div><button className="subtle-button" onClick={() => changePage('channels')}>Gérer les comptes <span>→</span></button></div>
+            <section className="channel-grid">
+              {channels.map(({ id, name, Icon, color }) => <div className="channel-card" key={id}><div className="channel-brand" style={{ '--brand-color': color }}><Icon size={22} /></div><div className="channel-info"><strong>{name}</strong><small><i /> Non connecté</small></div><button className="connect-button" onClick={() => openConnection(name)}>Connecter</button></div>)}
+            </section>
+            <div className="section-title-row recent-title"><div><h2>Publications à venir</h2><p>Votre planning de contenu.</p></div><button className="subtle-button" onClick={() => changePage('calendar')}>Voir le calendrier <span>→</span></button></div>
+            <section className="panel">{upcomingPosts.length ? upcomingPosts.slice(0, 4).map(renderPost) : <div className="empty-state"><div className="empty-icon"><CalendarDays size={22} /></div><strong>Aucune publication programmée</strong><p>Vos publications planifiées apparaîtront ici.</p><button className="secondary-button" onClick={() => changePage('compose')}>Créer une publication</button></div>}</section>
           </>}
-        </section>
 
-        <section className="manifesto section">
-          <div className="container manifesto-inner">
-            <div className="manifesto-symbol"><Crown size={34} /><span>K</span></div>
-            <div><div className="eyebrow">L'ESPRIT KREA</div><h2>Pas juste une présence en ligne.<br /><span className="gradient-text">Une identité qui marque.</span></h2><p>Chaque projet commence par une vision. Notre rôle est de lui donner une forme claire, utile et mémorable.</p></div>
-          </div>
-        </section>
+          {page === 'compose' && <>
+            <div className="page-heading"><div><div className="eyebrow">STUDIO DE CONTENU</div><h1>Créer une publication</h1><p>Préparez un contenu et choisissez les réseaux à cibler.</p></div></div>
+            <div className="compose-layout">
+              <section className="panel compose-panel">
+                <div className="panel-heading"><div><h2>Contenu de la publication</h2><p>Rédigez le texte qui accompagnera votre contenu.</p></div><span className="step-label">ÉTAPE 1</span></div>
+                <label className="field-label">Texte de la publication<textarea value={content} onChange={e => setContent(e.target.value)} rows={7} placeholder="Que souhaitez-vous partager avec votre audience ?" /><small>{content.length} caractères</small></label>
+                <label className="field-label">Média (facultatif)<div className="upload-box"><input type="file" accept="image/*,video/*" onChange={e => setMediaName(e.target.files?.[0]?.name || '')} /><div className="upload-content"><Plus size={20} /><strong>{mediaName || 'Ajouter une image ou une vidéo'}</strong><small>Fichier sélectionné localement pour cette démonstration</small></div></div></label>
+                <div className="panel-heading channel-heading"><div><h2>Choisir les réseaux</h2><p>La publication sera préparée pour les plateformes sélectionnées.</p></div><span className="step-label">ÉTAPE 2</span></div>
+                <div className="compose-channels">{channels.map(({ id, name, Icon, color }) => <label className={selectedChannels.includes(id) ? 'compose-channel selected' : 'compose-channel'} key={id}><input type="checkbox" checked={selectedChannels.includes(id)} onChange={() => toggleChannel(id)} /><Icon size={19} style={{ color }} /><span>{name}</span><small>À connecter</small></label>)}</div>
+                <div className="panel-heading schedule-heading"><div><h2>Programmer</h2><p>Choisissez la date et l’heure souhaitées.</p></div><span className="step-label">ÉTAPE 3</span></div>
+                <label className="field-label">Date et heure<input className="date-input" type="datetime-local" value={scheduledAt} min={new Date(Date.now() + 60000).toISOString().slice(0, 16)} onChange={e => setScheduledAt(e.target.value)} /></label>
+                {notice && <p className="inline-notice">{notice}</p>}
+                <div className="form-actions"><button className="secondary-button" onClick={() => savePost('draft')}>Enregistrer en brouillon</button><button className="primary-button" onClick={() => savePost('scheduled')}><Clock3 size={16} /> Programmer (démo)</button></div>
+                <p className="disclaimer">Important : cette version enregistre votre planification uniquement dans l’interface. Elle ne publie rien sur Instagram, Facebook, YouTube ou TikTok.</p>
+              </section>
+              <aside className="panel tips-panel"><div className="tips-icon"><Sparkles size={20} /></div><h3>Conseil IA</h3><p>L’assistant IA pourra proposer des légendes, des hashtags et adapter le ton de votre message à chaque réseau.</p><span className="coming-soon">À DÉVELOPPER</span><div className="tips-divider" /><h3>Avant de programmer</h3><ul><li>Vérifiez le texte et les liens.</li><li>Choisissez les bons réseaux.</li><li>Assurez-vous que vos comptes sont autorisés.</li></ul></aside>
+            </div>
+          </>}
 
-        <section className="process-section section container" id="methode">
-          <div className="section-heading">
-            <div><div className="eyebrow">SIMPLE ET TRANSPARENT</div><h2>De l'idée au <span className="gradient-text">résultat.</span></h2></div>
-            <p>Une méthode claire pour avancer ensemble, sans promesses floues.</p>
-          </div>
-          <div className="steps-grid">
-            {steps.map(([number, title, description]) => <div className="step" key={number}><span>{number}</span><h3>{title}</h3><p>{description}</p></div>)}
-          </div>
-        </section>
+          {page === 'calendar' && <>
+            <div className="page-heading"><div><div className="eyebrow">PLANIFICATION</div><h1>Calendrier</h1><p>Retrouvez vos contenus enregistrés et leurs dates prévues.</p></div><button className="primary-button" onClick={() => changePage('compose')}><Plus size={17} /> Planifier</button></div>
+            <div className="panel calendar-panel"><div className="calendar-top"><div><h2>Planning des publications</h2><p>Les éléments ci-dessous sont des planifications locales de démonstration.</p></div><span className="demo-tag"><span /> APERÇU</span></div>{upcomingPosts.length ? upcomingPosts.map(renderPost) : <div className="empty-state"><div className="empty-icon"><CalendarDays size={22} /></div><strong>Votre calendrier est vide</strong><p>Créez votre première publication programmée.</p><button className="primary-button" onClick={() => changePage('compose')}>Créer une publication</button></div>}</div>
+          </>}
 
-        <section className="contact-section section container" id="contact">
-          <div className="contact-panel">
-            <div className="contact-copy"><div className="eyebrow"><span className="status-dot" /> À VOUS DE JOUER</div><h2>On donne vie<br />à votre <span className="gradient-text">prochaine idée ?</span></h2><p>Présentez-nous votre projet. Nous pourrons échanger sur vos besoins et les prochaines étapes.</p><div className="contact-note"><MessageCircle size={18} /><span>Un premier échange pour mieux comprendre votre vision.</span></div><div className="whatsapp-contact"><p>Contactez KREA STUDIO sur WhatsApp :</p><a className="button button-primary" href="https://wa.me/2250714128268?text=Bonjour%20KREA%20STUDIO%2C%20je%20souhaite%20parler%20d'un%20projet." target="_blank" rel="noreferrer"><MessageCircle size={17} /> WhatsApp · 07 14 12 82 68</a><a className="button button-secondary" href="https://wa.me/2250758252235?text=Bonjour%20KREA%20STUDIO%2C%20je%20souhaite%20parler%20d'un%20projet." target="_blank" rel="noreferrer"><MessageCircle size={17} /> WhatsApp · 07 58 25 22 35</a></div></div>
-            <form className="contact-form" onSubmit={handleSubmit}>
-              <label>Votre nom<input required name="name" placeholder="Comment vous appeler ?" /></label>
-              <label>Votre adresse e-mail<input required type="email" name="email" placeholder="vous@exemple.com" /></label>
-              <label>Votre profil<select name="profile" defaultValue="" required><option value="" disabled>Vous êtes...</option><option>Petit commerçant / vendeur indépendant</option><option>Entrepreneur / créateur de contenu</option><option>PME / entreprise</option><option>Association / organisation</option><option>Autre</option></select><ChevronDown className="select-chevron" size={16} /></label>
-              <label>Votre projet<select name="project" defaultValue="" required><option value="" disabled>Choisir un service</option><option>Affiches publicitaires</option><option>Création de flyers</option><option>Miniature YouTube</option><option>Création de logo professionnel</option><option>Création de site web</option><option>Création de SaaS et outils web</option><option>Gestion des réseaux sociaux</option><option>Montage vidéo simple</option><option>Montage vidéo avancé</option><option>Création de boutique en ligne</option><option>Automatisation et assistants IA</option><option>Optimisation web et référencement</option><option>Autre projet digital</option></select><ChevronDown className="select-chevron" size={16} /></label>
-              <label>Quel budget avez-vous prévu ?<select name="budget" defaultValue="" required><option value="" disabled>Choisir une fourchette</option><option>Moins de 5 000 FCFA</option><option>5 000 à 15 000 FCFA</option><option>15 000 à 50 000 FCFA</option><option>50 000 à 100 000 FCFA</option><option>100 000 à 250 000 FCFA</option><option>250 000 à 500 000 FCFA</option><option>Plus de 500 000 FCFA</option><option>À discuter / besoin de conseils</option></select><ChevronDown className="select-chevron" size={16} /></label>
-              <label>Quel est votre objectif ?<select name="goal" defaultValue="" required><option value="" disabled>Choisir votre priorité</option><option>Attirer plus de clients</option><option>Présenter mon activité / ma marque</option><option>Vendre mes produits en ligne</option><option>Améliorer ma présence sur les réseaux sociaux</option><option>Automatiser certaines tâches</option><option>Lancer un nouveau projet numérique</option><option>Autre objectif</option></select><ChevronDown className="select-chevron" size={16} /></label>
-              <label>Quand souhaitez-vous commencer ?<select name="timeline" defaultValue=""><option value="">Pas encore décidé</option><option>Le plus tôt possible</option><option>Dans les 7 jours</option><option>Dans le mois</option><option>Plus tard</option></select><ChevronDown className="select-chevron" size={16} /></label>
-              <label>Décrivez votre besoin<textarea required name="message" rows="3" placeholder="Votre activité, les résultats attendus, les détails utiles..." /></label>
-              <button className="button button-primary submit-button" type="submit">Préparer ma demande <ArrowUpRight size={18} /></button>
-              {sent && <p className="form-feedback"><Check size={16} /> Formulaire de démonstration : aucun message n'a été envoyé. Le contact sera activé après configuration.</p>}
-            </form>
-          </div>
-        </section>
+          {page === 'channels' && <>
+            <div className="page-heading"><div><div className="eyebrow">CONNEXIONS OFFICIELLES</div><h1>Comptes sociaux</h1><p>Centralisez vos profils sans partager vos mots de passe.</p></div></div>
+            <div className="notice-banner"><ShieldCheck size={20} /><div><strong>Connexion sécurisée par autorisation</strong><p>Chaque plateforme devra autoriser KREA STUDIO via son système officiel OAuth. Les boutons ci-dessous présentent l’état de préparation : aucune connexion réelle n’est encore configurée.</p></div></div>
+            <div className="channel-list">{channels.map(({ id, name, Icon, color }) => <div className="channel-list-card" key={id}><div className="channel-brand large" style={{ '--brand-color': color }}><Icon size={24} /></div><div className="channel-info"><strong>{name}</strong><small>Publication et fonctions selon les autorisations de l’API</small></div><span className="not-connected">Non connecté</span><button className="connect-button" onClick={() => openConnection(name)}>Détails</button></div>)}</div>
+            <div className="api-note"><strong>À prévoir pour activer les connexions</strong><p>Créer les applications développeur officielles, configurer les URL de retour, obtenir les validations nécessaires et protéger les jetons d’accès côté serveur. Les possibilités de publication varient selon chaque plateforme et le type de compte.</p></div>
+          </>}
+
+          {page === 'analytics' && <>
+            <div className="page-heading"><div><div className="eyebrow">MESURE & PERFORMANCE</div><h1>Statistiques</h1><p>Suivez les résultats de vos publications sur les réseaux connectés.</p></div></div>
+            <div className="panel empty-state tall"><div className="empty-icon"><BarChart3 size={24} /></div><strong>Les statistiques apparaîtront ici</strong><p>Connectez vos comptes et autorisez l’accès aux données analytiques. Aucun chiffre n’est affiché tant qu’il n’existe pas de données réelles.</p><button className="secondary-button" onClick={() => changePage('channels')}>Voir les connexions</button></div>
+          </>}
+
+          {page === 'comments' && <>
+            <div className="page-heading"><div><div className="eyebrow">COMMUNAUTÉ</div><h1>Commentaires</h1><p>Centralisez les échanges lorsque les API des plateformes le permettent.</p></div></div>
+            <div className="panel empty-state tall"><div className="empty-icon"><MessageCircle size={24} /></div><strong>Aucun commentaire disponible</strong><p>La lecture et la gestion des commentaires nécessitent des comptes connectés et des autorisations spécifiques.</p><button className="secondary-button" onClick={() => changePage('channels')}>Configurer les comptes</button></div>
+          </>}
+        </div>
+        <footer className="app-footer"><span>© 2026 KREA STUDIO</span><span>Social Manager <i /> Mode aperçu — aucune publication envoyée</span></footer>
       </main>
 
-      <footer className="footer">
-        <div className="container footer-inner"><Brand /><p>© {new Date().getFullYear()} KREA STUDIO CI. Tous droits réservés.</p><div className="social-icons"><span aria-label="Instagram"><Instagram size={17} /></span><span aria-label="Facebook"><Facebook size={17} /></span><span aria-label="YouTube"><Youtube size={17} /></span></div></div>
-      </footer>
+      {notice && page !== 'compose' && <div className="toast"><Check size={16} />{notice}<button onClick={() => setNotice('')} aria-label="Fermer"><X size={15} /></button></div>}
+      {modal && <div className="modal-backdrop" onClick={() => setModal('')}><div className="modal-card" onClick={e => e.stopPropagation()}><button className="modal-close" onClick={() => setModal('')} aria-label="Fermer"><X size={18} /></button><div className="modal-icon"><ShieldCheck size={24} /></div><div className="eyebrow">CONFIGURATION REQUISE</div><h2>{modal === 'Centre d’aide' || modal === 'Paramètres' ? modal : `Connexion ${modal}`}</h2><p>{modal === 'Centre d’aide' ? 'Le centre d’aide détaillé sera ajouté dans une prochaine étape.' : modal === 'Paramètres' ? 'Les paramètres du compte, les préférences de publication et la sécurité seront configurés dans les prochaines étapes.' : `La connexion ${modal} n’est pas encore active. Il faut d’abord créer et configurer l’application développeur officielle, puis mettre en place le serveur sécurisé qui gérera l’autorisation.`}</p><div className="modal-warning">Aucun mot de passe ne vous sera demandé ici. Ne partagez jamais vos identifiants de réseaux sociaux.</div><button className="primary-button full" onClick={() => setModal('')}>Compris</button></div></div>}
     </div>
   )
 }
