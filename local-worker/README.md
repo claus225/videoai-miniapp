@@ -34,6 +34,8 @@ Le worker utilise faster-whisper avec le modèle `tiny`, sur CPU en précision i
 ## Limites et sécurité
 - Le modèle tiny privilégie la légèreté ; la qualité de transcription peut varier selon le son et l'accent.
 - Les sous-titres peuvent être exportés en SRT ou incrustés dans le MP4 avec trois styles ASS : Clean, Creator jaune et Minimal.
-- Pas encore de découpage intelligent, timeline éditable, animations mot par mot ou aperçu vidéo final avant export.
+- La transcription demande les timestamps mot par mot ; le rendu ASS utilise un effet karaoké qui surligne les mots au fil de la parole lorsque les timestamps sont disponibles.
+- Modifier le texte d'un segment dans l'interface désactive son ancien minutage mot par mot pour éviter une synchronisation trompeuse ; ce segment revient alors en sous-titre statique.
+- Pas encore de découpage intelligent, timeline éditable ou aperçu vidéo final avant export.
 - Les exports vidéo restent dans `local-worker/data/outbox` jusqu'à suppression manuelle.
 - Prototype local uniquement : ne pas le déployer publiquement. Une authentification locale et une politique de nettoyage automatique sont nécessaires avant diffusion client.
