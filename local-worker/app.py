@@ -54,7 +54,7 @@ def ass_timestamp(seconds):
     return f"{hours}:{minutes:02d}:{whole_seconds:02d}.{fraction:02d}"
 
 def ass_escape(value):
-    return str(value).replace("\\", r"\\").replace("{", r"\\{").replace("}", r"\\}").replace("\r", "").replace("\n", r"\\N")
+    return str(value).replace("\\", r"\\").replace("{", r"\{").replace("}", r"\}").replace("\r", "").replace("\n", r"\N")
 
 def write_ass(path, segments, style_name):
     style = CAPTION_STYLES[style_name]
@@ -87,7 +87,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 def ffmpeg_filter_path(path):
     # FFmpeg filter syntax needs Windows drive-colons escaped and forward slashes.
-    return path.resolve().as_posix().replace(":", r"\\:").replace("'", r"\\'")
+    return path.resolve().as_posix().replace(":", r"\:").replace("'", r"\'")
 
 @app.get("/health")
 def health():
