@@ -1,14 +1,27 @@
 import { useEffect, useState } from 'react'
-import { Clapperboard, Download, Film, HardDrive, RefreshCw, Scissors, ShieldCheck, UploadCloud } from 'lucide-react'
+import { Clapperboard, Download, Film, HardDrive, RefreshCw, Scissors, ShieldCheck, UploadCloud, Captions } from 'lucide-react'
 import './video-engine.css'
 
 const WORKER = 'http://127.0.0.1:8765'
+
+function srtTime(seconds) {
+  const ms = Math.max(0, Math.round(seconds * 1000))
+  const hours = String(Math.floor(ms / 3600000)).padStart(2, '0')
+  const minutes = String(Math.floor((ms % 3600000) / 60000)).padStart(2, '0')
+  const secs = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0')
+  const millis = String(ms % 1000).padStart(3, '0')
+  return `${hours}:${minutes}:${secs},${millis}`
+}
 
 export default function VideoEngine() {
   const [worker, setWorker] = useState('checking')
   const [file, setFile] = useState(null)
   const [format, setFormat] = useState('9:16')
   const [busy, setBusy] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
+  const [language, setLanguage] = useState('auto')
+  const [segments, setSegments] = useState([])
+  const [detectedLanguage, setDetectedLanguage] = useState('')
   const [message, setMessage] = useState('Démarrez le moteur local sur votre PC pour commencer.')
   const [downloadUrl, setDownloadUrl] = useState('')
 
@@ -48,6 +61,44 @@ export default function VideoEngine() {
     }
   }
 
+  async function transcribeVideo() {
+    if (!file) return
+    setTranscribing(true)
+    setSegments([])
+    setMessage('Extraction de l’audio et transcription locale… Le premier lancement peut télécharger le modèle Whisper.')
+    try {
+      const body = new FormData()
+      body.append('file', file)
+      body.append('language', language)
+      const response = await fetch(WORKER + '/api/transcribe', { method: 'POST', body })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.detail || 'La transcription a échoué.')
+      setSegments(data.segments || [])
+      setDetectedLanguage(data.language || '')
+      setMessage(`Transcription terminée : ${data.segments?.length || 0} segments détectés.`)
+    } catch (error) {
+      setMessage(error.message || 'Impossible de générer les sous-titres.')
+    } finally {
+      setTranscribing(false)
+    }
+  }
+
+  function updateSegment(index, text) {
+    setSegments(current => current.map((segment, i) => i === index ? { ...segment, text } : segment))
+  }
+
+  function downloadSrt() {
+    const srt = segments.map((segment, index) =>
+      `${index + 1}\n${srtTime(segment.start)} --> ${srtTime(segment.end)}\n${segment.text}\n`
+    ).join('\n')
+    const url = URL.createObjectURL(new Blob([srt], { type: 'text/plain;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'krea-sous-titres.srt'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <section className="video-engine">
       <div className="ve-heading">
@@ -58,21 +109,41 @@ export default function VideoEngine() {
         <div className="ve-card ve-upload">
           <div className="ve-card-title"><UploadCloud /><div><h2>Importer une vidéo</h2><p>MP4, MOV ou WebM · 500 Mo maximum</p></div></div>
           <label className="ve-drop">
-            <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={e => { setFile(e.target.files?.[0] || null); setDownloadUrl('') }} />
+            <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={e => { setFile(e.target.files?.[0] || null); setDownloadUrl(''); setSegments([]) }} />
             <Film size={32} /><strong>{file ? file.name : 'Choisir une vidéo'}</strong><span>{file ? (file.size / 1024 / 1024).toFixed(1) + ' Mo' : 'Sélectionner un fichier depuis ce PC'}</span>
           </label>
           <form onSubmit={renderVideo}>
             <label className="ve-label">Format de sortie<select value={format} onChange={e => setFormat(e.target.value)}><option value="9:16">Vertical — 9:16 (Reels / Shorts / TikTok)</option><option value="1:1">Carré — 1:1</option><option value="16:9">Paysage — 16:9 (YouTube)</option><option value="original">Conserver le format original</option></select></label>
-            <button className="ve-primary" disabled={!file || busy || worker !== 'online'}><Scissors size={17}/>{busy ? 'Traitement en cours…' : 'Lancer le rendu local'}</button>
+            <button className="ve-primary" disabled={!file || busy || transcribing || worker !== 'online'}><Scissors size={17}/>{busy ? 'Traitement en cours…' : 'Lancer le rendu local'}</button>
           </form>
+          <div className="ve-caption-tools">
+            <div className="ve-card-title"><Captions /><div><h2>Sous-titres automatiques</h2><p>Whisper local · modèle léger « tiny »</p></div></div>
+            <label className="ve-label">Langue de la vidéo
+              <select value={language} onChange={e => setLanguage(e.target.value)}>
+                <option value="auto">Détection automatique</option><option value="fr">Français</option><option value="en">Anglais</option><option value="es">Espagnol</option><option value="pt">Portugais</option><option value="ar">Arabe</option>
+              </select>
+            </label>
+            <button type="button" className="ve-primary" disabled={!file || transcribing || busy || worker !== 'online'} onClick={transcribeVideo}>
+              <Captions size={17}/>{transcribing ? 'Transcription en cours…' : 'Générer les sous-titres'}
+            </button>
+            {detectedLanguage && <p className="ve-message">Langue détectée : {detectedLanguage}</p>}
+            {segments.length > 0 && <div className="ve-transcript">
+              <strong>Modifier le texte avant export</strong>
+              {segments.map((segment, index) => <label className="ve-segment" key={index}>
+                <span>{srtTime(segment.start).slice(0, 8)} – {srtTime(segment.end).slice(0, 8)}</span>
+                <textarea value={segment.text} rows={2} onChange={event => updateSegment(index, event.target.value)} />
+              </label>)}
+              <button type="button" className="ve-download" onClick={downloadSrt}><Download size={17}/> Télécharger les sous-titres SRT</button>
+            </div>}
+          </div>
           <p className="ve-message">{message}</p>
           {downloadUrl && <a className="ve-download" href={downloadUrl}><Download size={17}/> Télécharger la vidéo MP4</a>}
         </div>
         <aside className="ve-card ve-info">
-          <div className="ve-info-icon"><HardDrive size={22}/></div><h2>Traitement sur votre PC</h2><p>Le moteur local utilise FFmpeg pour convertir et recadrer la vidéo. Aucun envoi vers un service cloud n'est effectué par ce module.</p>
-          <div className="ve-check"><ShieldCheck size={17}/> Fichiers traités localement</div>
+          <div className="ve-info-icon"><HardDrive size={22}/></div><h2>Traitement sur votre PC</h2><p>FFmpeg convertit et recadre la vidéo. Whisper transcrit l’audio localement. Le premier usage de Whisper nécessite le téléchargement de son modèle.</p>
+          <div className="ve-check"><ShieldCheck size={17}/> Traitement local après installation</div>
           <button className="ve-refresh" onClick={checkWorker}><RefreshCw size={15}/> Vérifier la connexion</button>
-          <div className="ve-note"><strong>Version initiale</strong><span>Le découpage intelligent, Whisper, les sous-titres animés et la timeline seront ajoutés après validation du premier rendu.</span></div>
+          <div className="ve-note"><strong>Limites actuelles</strong><span>Les sous-titres sont exportés en SRT séparé ; leur incrustation dans la vidéo et les styles animés seront ajoutés ensuite.</span></div>
         </aside>
       </div>
     </section>
