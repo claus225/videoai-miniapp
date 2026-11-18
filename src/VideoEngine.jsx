@@ -15,6 +15,7 @@ function srtTime(seconds) {
 
 export default function VideoEngine() {
   const [worker, setWorker] = useState('checking')
+  const [workerToken, setWorkerToken] = useState('')
   const [file, setFile] = useState(null)
   const [format, setFormat] = useState('9:16')
   const [busy, setBusy] = useState(false)
@@ -53,7 +54,7 @@ export default function VideoEngine() {
       const body = new FormData()
       body.append('file', file)
       body.append('format', format)
-      const response = await fetch(WORKER + '/api/render', { method: 'POST', body })
+      const response = await fetch(WORKER + '/api/render', { method: 'POST', body, headers: { 'X-Krea-Token': workerToken.trim() } })
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'Le rendu a échoué.')
       setDownloadUrl(WORKER + data.download_url)
@@ -75,7 +76,7 @@ export default function VideoEngine() {
       const body = new FormData()
       body.append('file', file)
       body.append('language', language)
-      const response = await fetch(WORKER + '/api/transcribe', { method: 'POST', body })
+      const response = await fetch(WORKER + '/api/transcribe', { method: 'POST', body, headers: { 'X-Krea-Token': workerToken.trim() } })
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'La transcription a échoué.')
       setSegments(data.segments || []); setPreviewUrl('')
@@ -101,7 +102,7 @@ export default function VideoEngine() {
       body.append('subtitles', JSON.stringify(segments))
       body.append('start_seconds', String(Math.max(0, Number(previewStart) || 0)))
       body.append('duration_seconds', '8')
-      const response = await fetch(WORKER + '/api/preview-subtitled', { method: 'POST', body })
+      const response = await fetch(WORKER + '/api/preview-subtitled', { method: 'POST', body, headers: { 'X-Krea-Token': workerToken.trim() } })
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'La création de l’aperçu a échoué.')
       setPreviewUrl(WORKER + data.preview_url)
@@ -124,7 +125,7 @@ export default function VideoEngine() {
       body.append('format', format)
       body.append('style', captionStyle)
       body.append('subtitles', JSON.stringify(segments))
-      const response = await fetch(WORKER + '/api/render-subtitled', { method: 'POST', body })
+      const response = await fetch(WORKER + '/api/render-subtitled', { method: 'POST', body, headers: { 'X-Krea-Token': workerToken.trim() } })
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'Le rendu avec sous-titres a échoué.')
       setDownloadUrl(WORKER + data.download_url)
@@ -158,6 +159,12 @@ export default function VideoEngine() {
         <div><span className="ve-eyebrow">KREA CREATIVE TOOLS</span><h1><Clapperboard size={27} /> KREA VIDEO ENGINE</h1><p>Studio de montage local — vos vidéos restent sur votre PC.</p></div>
         <span className={`ve-status ${worker}`}><i />{worker === 'online' ? 'Moteur connecté' : worker === 'missing-ffmpeg' ? 'FFmpeg manquant' : worker === 'checking' ? 'Vérification…' : 'PC non connecté'}</span>
       </div>
+      <div className="ve-security-key">
+        <label className="ve-label">Clé de sécurité locale
+          <input type="password" autoComplete="off" spellCheck="false" value={workerToken} onChange={event => setWorkerToken(event.target.value)} placeholder="Collez ici la clé affichée dans le terminal du moteur" />
+        </label>
+        <p>La clé change à chaque démarrage du moteur. Ne la partagez jamais.</p>
+      </div>
       <div className="ve-grid">
         <div className="ve-card ve-upload">
           <div className="ve-card-title"><UploadCloud /><div><h2>Importer une vidéo</h2><p>MP4, MOV ou WebM · 500 Mo maximum</p></div></div>
@@ -167,7 +174,7 @@ export default function VideoEngine() {
           </label>
           <form onSubmit={renderVideo}>
             <label className="ve-label">Format de sortie<select value={format} onChange={e => setFormat(e.target.value)}><option value="9:16">Vertical — 9:16 (Reels / Shorts / TikTok)</option><option value="1:1">Carré — 1:1</option><option value="16:9">Paysage — 16:9 (YouTube)</option><option value="original">Conserver le format original</option></select></label>
-            <button className="ve-primary" disabled={!file || busy || transcribing || worker !== 'online'}><Scissors size={17}/>{busy ? 'Traitement en cours…' : 'Lancer le rendu local'}</button>
+            <button className="ve-primary" disabled={!file || !workerToken.trim() || busy || transcribing || worker !== 'online'}><Scissors size={17}/>{busy ? 'Traitement en cours…' : 'Lancer le rendu local'}</button>
           </form>
           <div className="ve-caption-tools">
             <div className="ve-card-title"><Captions /><div><h2>Sous-titres automatiques</h2><p>Whisper local · modèle léger « tiny »</p></div></div>
@@ -176,7 +183,7 @@ export default function VideoEngine() {
                 <option value="auto">Détection automatique</option><option value="fr">Français</option><option value="en">Anglais</option><option value="es">Espagnol</option><option value="pt">Portugais</option><option value="ar">Arabe</option>
               </select>
             </label>
-            <button type="button" className="ve-primary" disabled={!file || transcribing || busy || worker !== 'online'} onClick={transcribeVideo}>
+            <button type="button" className="ve-primary" disabled={!file || !workerToken.trim() || transcribing || busy || worker !== 'online'} onClick={transcribeVideo}>
               <Captions size={17}/>{transcribing ? 'Transcription en cours…' : 'Générer les sous-titres'}
             </button>
             {detectedLanguage && <p className="ve-message">Langue détectée : {detectedLanguage}</p>}
@@ -199,11 +206,11 @@ export default function VideoEngine() {
                 <label className="ve-label">Début de l’aperçu (secondes)
                   <input className="ve-preview-time" type="number" min="0" step="1" value={previewStart} onChange={event => { setPreviewStart(event.target.value); setPreviewUrl('') }} />
                 </label>
-                <button type="button" className="ve-download" disabled={previewing || busy || worker !== 'online'} onClick={generatePreview}>
+                <button type="button" className="ve-download" disabled={!workerToken.trim() || previewing || busy || worker !== 'online'} onClick={generatePreview}>
                   <Film size={17}/>{previewing ? 'Création de l’aperçu…' : 'Prévisualiser 8 secondes avec sous-titres'}
                 </button>
                 {previewUrl && <div className="ve-preview-player"><strong>Aperçu avant export</strong><video controls playsInline preload="metadata" src={previewUrl} /></div>}
-                <button type="button" className="ve-primary" disabled={busy || previewing || worker !== 'online'} onClick={renderWithCaptions}>
+                <button type="button" className="ve-primary" disabled={!workerToken.trim() || busy || previewing || worker !== 'online'} onClick={renderWithCaptions}>
                   <Sparkles size={17}/>{busy ? 'Incrustation en cours…' : 'Créer la vidéo avec sous-titres'}
                 </button>
               </div>
