@@ -25,6 +25,9 @@ export default function VideoEngine() {
   const [detectedLanguage, setDetectedLanguage] = useState('')
   const [message, setMessage] = useState('Démarrez le moteur local sur votre PC pour commencer.')
   const [downloadUrl, setDownloadUrl] = useState('')
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [previewStart, setPreviewStart] = useState('0')
+  const [previewing, setPreviewing] = useState(false)
 
   async function checkWorker() {
     setWorker('checking')
@@ -75,13 +78,38 @@ export default function VideoEngine() {
       const response = await fetch(WORKER + '/api/transcribe', { method: 'POST', body })
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'La transcription a échoué.')
-      setSegments(data.segments || [])
+      setSegments(data.segments || []); setPreviewUrl('')
       setDetectedLanguage(data.language || '')
       setMessage(`Transcription terminée : ${data.segments?.length || 0} segments détectés.`)
     } catch (error) {
       setMessage(error.message || 'Impossible de générer les sous-titres.')
     } finally {
       setTranscribing(false)
+    }
+  }
+
+  async function generatePreview() {
+    if (!file || !segments.length) return
+    setPreviewing(true)
+    setPreviewUrl('')
+    setMessage('Création d’un aperçu de 8 secondes avec les sous-titres…')
+    try {
+      const body = new FormData()
+      body.append('file', file)
+      body.append('format', format)
+      body.append('style', captionStyle)
+      body.append('subtitles', JSON.stringify(segments))
+      body.append('start_seconds', String(Math.max(0, Number(previewStart) || 0)))
+      body.append('duration_seconds', '8')
+      const response = await fetch(WORKER + '/api/preview-subtitled', { method: 'POST', body })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.detail || 'La création de l’aperçu a échoué.')
+      setPreviewUrl(WORKER + data.preview_url)
+      setMessage('Aperçu prêt : vérifiez le style et la synchronisation avant le rendu final.')
+    } catch (error) {
+      setMessage(error.message || 'Impossible de créer l’aperçu.')
+    } finally {
+      setPreviewing(false)
     }
   }
 
@@ -109,7 +137,7 @@ export default function VideoEngine() {
   }
 
   function updateSegment(index, text) {
-    setSegments(current => current.map((segment, i) => i === index ? { ...segment, text, words: [] } : segment))
+    setSegments(current => current.map((segment, i) => i === index ? { ...segment, text, words: [] } : segment)); setPreviewUrl('')
   }
 
   function downloadSrt() {
@@ -134,7 +162,7 @@ export default function VideoEngine() {
         <div className="ve-card ve-upload">
           <div className="ve-card-title"><UploadCloud /><div><h2>Importer une vidéo</h2><p>MP4, MOV ou WebM · 500 Mo maximum</p></div></div>
           <label className="ve-drop">
-            <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={e => { setFile(e.target.files?.[0] || null); setDownloadUrl(''); setSegments([]); setDetectedLanguage('') }} />
+            <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={e => { setFile(e.target.files?.[0] || null); setDownloadUrl(''); setPreviewUrl(''); setSegments([]); setDetectedLanguage('') }} />
             <Film size={32} /><strong>{file ? file.name : 'Choisir une vidéo'}</strong><span>{file ? (file.size / 1024 / 1024).toFixed(1) + ' Mo' : 'Sélectionner un fichier depuis ce PC'}</span>
           </label>
           <form onSubmit={renderVideo}>
@@ -168,7 +196,14 @@ export default function VideoEngine() {
                   </select>
                 </label>
                 <div className={`ve-caption-preview ${captionStyle}`}>Exemple de sous-titre</div>
-                <button type="button" className="ve-primary" disabled={busy || worker !== 'online'} onClick={renderWithCaptions}>
+                <label className="ve-label">Début de l’aperçu (secondes)
+                  <input className="ve-preview-time" type="number" min="0" step="1" value={previewStart} onChange={event => { setPreviewStart(event.target.value); setPreviewUrl('') }} />
+                </label>
+                <button type="button" className="ve-download" disabled={previewing || busy || worker !== 'online'} onClick={generatePreview}>
+                  <Film size={17}/>{previewing ? 'Création de l’aperçu…' : 'Prévisualiser 8 secondes avec sous-titres'}
+                </button>
+                {previewUrl && <div className="ve-preview-player"><strong>Aperçu avant export</strong><video controls playsInline preload="metadata" src={previewUrl} /></div>}
+                <button type="button" className="ve-primary" disabled={busy || previewing || worker !== 'online'} onClick={renderWithCaptions}>
                   <Sparkles size={17}/>{busy ? 'Incrustation en cours…' : 'Créer la vidéo avec sous-titres'}
                 </button>
               </div>
@@ -181,7 +216,7 @@ export default function VideoEngine() {
           <div className="ve-info-icon"><HardDrive size={22}/></div><h2>Traitement sur votre PC</h2><p>FFmpeg convertit, recadre et incruste les sous-titres. Whisper transcrit l’audio localement. Le premier usage de Whisper nécessite le téléchargement de son modèle.</p>
           <div className="ve-check"><ShieldCheck size={17}/> Traitement local après installation</div>
           <button className="ve-refresh" onClick={checkWorker}><RefreshCw size={15}/> Vérifier la connexion</button>
-          <div className="ve-note"><strong>Styles disponibles</strong><span>Clean, Creator jaune et Minimal. Les sous-titres sont incrustés dans le MP4 final avec surlignage mot par mot. Le mode karaoké surligne chaque mot selon ses timestamps ; le rendu nécessite un nouvel encodage vidéo.</span></div>
+          <div className="ve-note"><strong>Styles disponibles</strong><span>Clean, Creator jaune et Minimal. Les sous-titres sont incrustés dans le MP4 final avec surlignage mot par mot. Le mode karaoké surligne chaque mot selon ses timestamps. Tu peux créer un aperçu de 8 secondes avant l’export final.</span></div>
         </aside>
       </div>
     </section>
