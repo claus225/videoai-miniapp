@@ -19,6 +19,8 @@ py app.py
 
 Le service écoute uniquement sur 127.0.0.1:8765. Ne l'exposez pas sur Internet.
 
+Au démarrage, le terminal affiche une clé aléatoire de sécurité. Copiez-la dans le champ « Clé de sécurité locale » de KREA VIDEO ENGINE. Elle est renouvelée à chaque démarrage du moteur. Ne la partagez pas et ne la mettez jamais dans GitHub.
+
 Vérification : ouvrir http://127.0.0.1:8765/health ; la réponse doit contenir "ffmpeg": true.
 
 ## Utilisation
@@ -39,4 +41,5 @@ Le worker utilise faster-whisper avec le modèle `tiny`, sur CPU en précision i
 - Modifier le texte d'un segment dans l'interface désactive son ancien minutage mot par mot pour éviter une synchronisation trompeuse ; ce segment revient alors en sous-titre statique.
 - Pas encore de découpage intelligent, timeline éditable ou timeline éditable.
 - Les exports vidéo restent dans `local-worker/data/outbox` jusqu'à suppression manuelle.
-- Prototype local uniquement : ne pas le déployer publiquement. Une authentification locale et une politique de nettoyage automatique sont nécessaires avant diffusion client.
+- Prototype local uniquement : ne pas le déployer publiquement. L’authentification par clé éphémère et le contrôle d’origine sont une première barrière, pas une garantie absolue. Il reste à ajouter des tests de sécurité, une politique de nettoyage automatique, une validation approfondie des médias, des limites de concurrence et une revue avant diffusion client.
+- Le dépôt GitHub est public : n’y ajoutez jamais de mot de passe, clé API, jeton ou fichier `.env`.
