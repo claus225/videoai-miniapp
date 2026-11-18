@@ -1,12 +1,14 @@
 from pathlib import Path
 from uuid import uuid4
 import json
+import secrets
+import hmac
 import shutil
 import subprocess
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 BASE = Path(__file__).resolve().parent
 INBOX = BASE / "data" / "inbox"
@@ -24,13 +26,27 @@ CAPTION_STYLES = {
     "minimal": {"font": "Arial", "size": 42, "primary": "&H00FFFFFF", "outline": 1, "shadow": 0},
 }
 
-app = FastAPI(title="KREA VIDEO ENGINE Local Worker", version="0.3.0")
+app = FastAPI(title="KREA VIDEO ENGINE Local Worker", version="0.4.0")
+ALLOWED_ORIGINS = {"http://localhost:5173", "http://127.0.0.1:5173"}
+WORKER_TOKEN = secrets.token_urlsafe(32)
+PROTECTED_POST_PATHS = {"/api/render", "/api/transcribe", "/api/render-subtitled", "/api/preview-subtitled"}
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=sorted(ALLOWED_ORIGINS),
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "X-Krea-Token"],
 )
+
+@app.middleware("http")
+async def protect_processing_routes(request: Request, call_next):
+    if request.method == "POST" and request.url.path in PROTECTED_POST_PATHS:
+        origin = request.headers.get("origin")
+        if origin and origin not in ALLOWED_ORIGINS:
+            return JSONResponse(status_code=403, content={"detail": "Origine non autorisée."})
+        supplied = request.headers.get("x-krea-token", "")
+        if not hmac.compare_digest(supplied, WORKER_TOKEN):
+            return JSONResponse(status_code=401, content={"detail": "Clé locale absente ou invalide. Copiez la clé affichée dans le terminal du moteur."})
+    return await call_next(request)
 
 def ffmpeg_path():
     return shutil.which("ffmpeg")
@@ -316,4 +332,7 @@ def download(job_id: str):
 
 if __name__ == "__main__":
     import uvicorn
+    print("\nKREA VIDEO ENGINE local security key (valid until shutdown):")
+    print(WORKER_TOKEN)
+    print("Keep this key private. The worker remains bound to 127.0.0.1.\n")
     uvicorn.run(app, host="127.0.0.1", port=8765)
