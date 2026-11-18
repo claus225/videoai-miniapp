@@ -3,8 +3,9 @@ import {
   Activity, BarChart3, CalendarDays, Check, ChevronDown, Clock3,
   Facebook, FileText, HelpCircle, Home, Instagram, Layers3, Link2,
   MessageCircle, Plus, Send, Settings, ShieldCheck, Sparkles,
-  Video, X, Youtube, Menu
+  Video, X, Youtube, Menu, Clapperboard
 } from 'lucide-react'
+import VideoEngine from './VideoEngine.jsx'
 
 const channels = [
   { id: 'instagram', name: 'Instagram', Icon: Instagram, color: '#e879a8' },
@@ -20,6 +21,7 @@ const navigation = [
   { id: 'channels', label: 'Comptes sociaux', Icon: Layers3 },
   { id: 'analytics', label: 'Statistiques', Icon: BarChart3 },
   { id: 'comments', label: 'Commentaires', Icon: MessageCircle },
+  { id: 'video-engine', label: 'KREA VIDEO ENGINE', Icon: Clapperboard },
 ]
 
 function App() {
@@ -138,6 +140,7 @@ function App() {
         </header>
 
         <div className="content-wrap">
+          {page === 'video-engine' && <VideoEngine />}
           {page === 'overview' && <>
             <div className="page-heading"><div><div className="eyebrow">VOTRE ESPACE SOCIAL</div><h1>Vue générale</h1><p>Préparez et organisez vos contenus depuis un seul endroit.</p></div><button className="primary-button" onClick={() => changePage('compose')}><Plus size={17} /> Nouvelle publication</button></div>
             <div className="notice-banner"><Sparkles size={19} /><div><strong>Bienvenue dans KREA STUDIO Social Manager</strong><p>Le tableau de bord est en mode aperçu. Les connexions officielles et l’envoi automatique seront activés après la configuration des API et du serveur.</p></div></div>
