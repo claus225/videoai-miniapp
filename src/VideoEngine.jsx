@@ -109,7 +109,7 @@ export default function VideoEngine() {
   }
 
   function updateSegment(index, text) {
-    setSegments(current => current.map((segment, i) => i === index ? { ...segment, text } : segment))
+    setSegments(current => current.map((segment, i) => i === index ? { ...segment, text, words: [] } : segment))
   }
 
   function downloadSrt() {
@@ -153,7 +153,7 @@ export default function VideoEngine() {
             </button>
             {detectedLanguage && <p className="ve-message">Langue détectée : {detectedLanguage}</p>}
             {segments.length > 0 && <div className="ve-transcript">
-              <strong>Modifier le texte avant export</strong>
+              <strong>Modifier le texte avant export</strong><p className="ve-sync-note">{segments.reduce((total, segment) => total + (segment.words?.length || 0), 0)} mots horodatés détectés. Le surlignage mot par mot est activé à l’export ; modifier un segment désactive sa synchronisation mot à mot.</p>
               {segments.map((segment, index) => <label className="ve-segment" key={index}>
                 <span>{srtTime(segment.start).slice(0, 8)} – {srtTime(segment.end).slice(0, 8)}</span>
                 <textarea value={segment.text} rows={2} onChange={event => updateSegment(index, event.target.value)} />
@@ -181,7 +181,7 @@ export default function VideoEngine() {
           <div className="ve-info-icon"><HardDrive size={22}/></div><h2>Traitement sur votre PC</h2><p>FFmpeg convertit, recadre et incruste les sous-titres. Whisper transcrit l’audio localement. Le premier usage de Whisper nécessite le téléchargement de son modèle.</p>
           <div className="ve-check"><ShieldCheck size={17}/> Traitement local après installation</div>
           <button className="ve-refresh" onClick={checkWorker}><RefreshCw size={15}/> Vérifier la connexion</button>
-          <div className="ve-note"><strong>Styles disponibles</strong><span>Clean, Creator jaune et Minimal. Les sous-titres sont incrustés dans le MP4 final ; le rendu nécessite un nouvel encodage vidéo.</span></div>
+          <div className="ve-note"><strong>Styles disponibles</strong><span>Clean, Creator jaune et Minimal. Les sous-titres sont incrustés dans le MP4 final avec surlignage mot par mot. Le mode karaoké surligne chaque mot selon ses timestamps ; le rendu nécessite un nouvel encodage vidéo.</span></div>
         </aside>
       </div>
     </section>
