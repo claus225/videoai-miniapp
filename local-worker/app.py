@@ -56,7 +56,7 @@ def ass_timestamp(seconds):
 def ass_escape(value):
     return str(value).replace("\\", r"\\").replace("{", r"\{").replace("}", r"\}").replace("\r", "").replace("\n", r"\N")
 
-def write_ass(path, segments, style_name):
+def write_ass(path, segments, style_name, offset=0.0, duration=None):
     style = CAPTION_STYLES[style_name]
     header = f"""[Script Info]
 Title: KREA VIDEO ENGINE Captions
@@ -80,6 +80,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             text = ass_escape(item["text"]).strip()
         except (KeyError, TypeError, ValueError):
             continue
+        if duration is not None:
+            if end <= offset or start >= offset + duration:
+                continue
+            start, end = max(0.0, start - offset), min(duration, end - offset)
         if start < 0 or end <= start or not text:
             continue
         words = item.get("words")
@@ -89,6 +93,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 try:
                     word_start, word_end = float(word["start"]), float(word["end"])
                     word_text = ass_escape(word["text"])
+                    if duration is not None:
+                        if word_end <= offset or word_start >= offset + duration:
+                            continue
+                        word_start, word_end = max(0.0, word_start - offset), min(duration, word_end - offset)
                 except (KeyError, TypeError, ValueError):
                     continue
                 duration = max(1, round((word_end - word_start) * 100))
@@ -235,6 +243,67 @@ async def render_subtitled(
         source.unlink(missing_ok=True)
         ass_file.unlink(missing_ok=True)
         await file.close()
+
+@app.post("/api/preview-subtitled")
+async def preview_subtitled(
+    file: UploadFile = File(...),
+    format: str = Form("9:16"),
+    style: str = Form("clean"),
+    subtitles: str = Form(...),
+    start_seconds: float = Form(0),
+    duration_seconds: float = Form(8),
+):
+    if not ffmpeg_path():
+        raise HTTPException(status_code=503, detail="FFmpeg n'est pas installé ou absent du PATH Windows.")
+    if format not in FORMATS or style not in CAPTION_STYLES:
+        raise HTTPException(status_code=400, detail="Format ou style de sous-titres non pris en charge.")
+    if start_seconds < 0 or duration_seconds < 3 or duration_seconds > 12:
+        raise HTTPException(status_code=400, detail="Choisissez un début positif et un aperçu entre 3 et 12 secondes.")
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in VIDEO_SUFFIXES:
+        raise HTTPException(status_code=415, detail="Utilisez un fichier MP4, MOV ou WebM.")
+    try:
+        segments = json.loads(subtitles)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Données de sous-titres invalides.")
+    if not isinstance(segments, list) or not segments or len(segments) > 2000:
+        raise HTTPException(status_code=400, detail="Fournissez entre 1 et 2000 segments de sous-titres.")
+    job_id = uuid4().hex
+    source = INBOX / f"{job_id}{suffix}"
+    output = OUTBOX / f"preview-{job_id}.mp4"
+    ass_file = TEMP / f"preview-{job_id}.ass"
+    try:
+        save_upload(file, source)
+        write_ass(ass_file, segments, style, offset=start_seconds, duration=duration_seconds)
+        filters = []
+        if FORMATS[format]:
+            filters.append(FORMATS[format])
+        filters.append(f"subtitles='{ffmpeg_filter_path(ass_file)}'")
+        args = [
+            ffmpeg_path(), "-y", "-ss", str(start_seconds), "-i", str(source),
+            "-t", str(duration_seconds), "-map", "0:v:0", "-map", "0:a?",
+            "-vf", ",".join(filters), "-c:v", "libx264", "-preset", "veryfast",
+            "-crf", "24", "-c:a", "aac", "-movflags", "+faststart", str(output),
+        ]
+        result = subprocess.run(args, capture_output=True, text=True, timeout=600)
+        if result.returncode != 0 or not output.exists():
+            raise HTTPException(status_code=422, detail="Impossible de créer l'aperçu. Vérifiez FFmpeg et ses filtres.")
+        return {"job_id": job_id, "status": "completed", "preview_url": f"/api/preview/{job_id}"}
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=408, detail="La création de l'aperçu a dépassé 10 minutes.")
+    finally:
+        source.unlink(missing_ok=True)
+        ass_file.unlink(missing_ok=True)
+        await file.close()
+
+@app.get("/api/preview/{job_id}")
+def get_preview(job_id: str):
+    if not job_id.isalnum() or len(job_id) != 32:
+        raise HTTPException(status_code=400, detail="Identifiant invalide.")
+    output = OUTBOX / f"preview-{job_id}.mp4"
+    if not output.is_file():
+        raise HTTPException(status_code=404, detail="Aperçu introuvable ou déjà supprimé.")
+    return FileResponse(output, media_type="video/mp4", filename="krea-apercu.mp4")
 
 @app.get("/api/download/{job_id}")
 def download(job_id: str):
