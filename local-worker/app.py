@@ -68,7 +68,7 @@ PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: KREA,{style['font']},{style['size']},{style['primary']},&H000000FF,&H00101010,&H80000000,1,0,0,0,100,100,0,0,1,{style['outline']},{style['shadow']},2,70,70,100,1
+Style: KREA,{style['font']},{style['size']},{style['primary']},&H0000FFFF,&H00101010,&H80000000,1,0,0,0,100,100,0,0,1,{style['outline']},{style['shadow']},2,70,70,100,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -82,7 +82,22 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             continue
         if start < 0 or end <= start or not text:
             continue
-        rows.append(f"Dialogue: 0,{ass_timestamp(start)},{ass_timestamp(end)},KREA,,0,0,0,,{text}")
+        words = item.get("words")
+        if isinstance(words, list) and words and text == ass_escape(item.get("text", "")).strip():
+            karaoke = []
+            for word in words:
+                try:
+                    word_start, word_end = float(word["start"]), float(word["end"])
+                    word_text = ass_escape(word["text"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                duration = max(1, round((word_end - word_start) * 100))
+                if word_end > word_start and word_text:
+                    karaoke.append(f"{{\\kf{duration}}}{word_text}")
+            rendered_text = "".join(karaoke) if karaoke else text
+        else:
+            rendered_text = text
+        rows.append(f"Dialogue: 0,{ass_timestamp(start)},{ass_timestamp(end)},KREA,,0,0,0,,{rendered_text}")
     path.write_text(header + "\n".join(rows) + "\n", encoding="utf-8-sig")
 
 def ffmpeg_filter_path(path):
@@ -147,11 +162,29 @@ async def transcribe(file: UploadFile = File(...), language: str = Form("auto"))
         except ImportError:
             raise HTTPException(status_code=503, detail="Installez les dépendances avec : pip install -r requirements.txt")
         model = WhisperModel("tiny", device="cpu", compute_type="int8")
-        segments, info = model.transcribe(str(audio), language=None if language == "auto" else language, vad_filter=True)
-        transcript = [
-            {"start": round(segment.start, 2), "end": round(segment.end, 2), "text": segment.text.strip()}
-            for segment in segments
-        ]
+        segments, info = model.transcribe(
+            str(audio),
+            language=None if language == "auto" else language,
+            vad_filter=True,
+            word_timestamps=True,
+        )
+        transcript = []
+        for segment in segments:
+            words = []
+            for word in (segment.words or []):
+                if word.start is None or word.end is None:
+                    continue
+                words.append({
+                    "start": round(word.start, 3),
+                    "end": round(word.end, 3),
+                    "text": word.word,
+                })
+            transcript.append({
+                "start": round(segment.start, 2),
+                "end": round(segment.end, 2),
+                "text": segment.text.strip(),
+                "words": words,
+            })
         return {"status": "completed", "language": info.language, "language_probability": round(info.language_probability, 3), "segments": transcript}
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=408, detail="L'extraction audio a dépassé le délai autorisé.")
