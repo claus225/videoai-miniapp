@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Clapperboard, Download, Film, HardDrive, RefreshCw, Scissors, ShieldCheck, UploadCloud, Captions } from 'lucide-react'
+import { Clapperboard, Download, Film, HardDrive, RefreshCw, Scissors, ShieldCheck, UploadCloud, Captions, Sparkles } from 'lucide-react'
 import './video-engine.css'
 
 const WORKER = 'http://127.0.0.1:8765'
@@ -20,6 +20,7 @@ export default function VideoEngine() {
   const [busy, setBusy] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
   const [language, setLanguage] = useState('auto')
+  const [captionStyle, setCaptionStyle] = useState('clean')
   const [segments, setSegments] = useState([])
   const [detectedLanguage, setDetectedLanguage] = useState('')
   const [message, setMessage] = useState('Démarrez le moteur local sur votre PC pour commencer.')
@@ -65,6 +66,7 @@ export default function VideoEngine() {
     if (!file) return
     setTranscribing(true)
     setSegments([])
+    setDownloadUrl('')
     setMessage('Extraction de l’audio et transcription locale… Le premier lancement peut télécharger le modèle Whisper.')
     try {
       const body = new FormData()
@@ -80,6 +82,29 @@ export default function VideoEngine() {
       setMessage(error.message || 'Impossible de générer les sous-titres.')
     } finally {
       setTranscribing(false)
+    }
+  }
+
+  async function renderWithCaptions() {
+    if (!file || !segments.length) return
+    setBusy(true)
+    setDownloadUrl('')
+    setMessage('Incrustation des sous-titres et rendu MP4 en cours sur votre PC…')
+    try {
+      const body = new FormData()
+      body.append('file', file)
+      body.append('format', format)
+      body.append('style', captionStyle)
+      body.append('subtitles', JSON.stringify(segments))
+      const response = await fetch(WORKER + '/api/render-subtitled', { method: 'POST', body })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.detail || 'Le rendu avec sous-titres a échoué.')
+      setDownloadUrl(WORKER + data.download_url)
+      setMessage('Vidéo terminée : les sous-titres sont incrustés dans le MP4.')
+    } catch (error) {
+      setMessage(error.message || 'Impossible d’incruster les sous-titres.')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -109,7 +134,7 @@ export default function VideoEngine() {
         <div className="ve-card ve-upload">
           <div className="ve-card-title"><UploadCloud /><div><h2>Importer une vidéo</h2><p>MP4, MOV ou WebM · 500 Mo maximum</p></div></div>
           <label className="ve-drop">
-            <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={e => { setFile(e.target.files?.[0] || null); setDownloadUrl(''); setSegments([]) }} />
+            <input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={e => { setFile(e.target.files?.[0] || null); setDownloadUrl(''); setSegments([]); setDetectedLanguage('') }} />
             <Film size={32} /><strong>{file ? file.name : 'Choisir une vidéo'}</strong><span>{file ? (file.size / 1024 / 1024).toFixed(1) + ' Mo' : 'Sélectionner un fichier depuis ce PC'}</span>
           </label>
           <form onSubmit={renderVideo}>
@@ -134,16 +159,29 @@ export default function VideoEngine() {
                 <textarea value={segment.text} rows={2} onChange={event => updateSegment(index, event.target.value)} />
               </label>)}
               <button type="button" className="ve-download" onClick={downloadSrt}><Download size={17}/> Télécharger les sous-titres SRT</button>
+              <div className="ve-style-picker">
+                <label className="ve-label">Style visuel
+                  <select value={captionStyle} onChange={event => setCaptionStyle(event.target.value)}>
+                    <option value="clean">Clean — blanc, contour discret</option>
+                    <option value="bold">Creator — jaune, caractères épais</option>
+                    <option value="minimal">Minimal — blanc, contour fin</option>
+                  </select>
+                </label>
+                <div className={`ve-caption-preview ${captionStyle}`}>Exemple de sous-titre</div>
+                <button type="button" className="ve-primary" disabled={busy || worker !== 'online'} onClick={renderWithCaptions}>
+                  <Sparkles size={17}/>{busy ? 'Incrustation en cours…' : 'Créer la vidéo avec sous-titres'}
+                </button>
+              </div>
             </div>}
           </div>
           <p className="ve-message">{message}</p>
           {downloadUrl && <a className="ve-download" href={downloadUrl}><Download size={17}/> Télécharger la vidéo MP4</a>}
         </div>
         <aside className="ve-card ve-info">
-          <div className="ve-info-icon"><HardDrive size={22}/></div><h2>Traitement sur votre PC</h2><p>FFmpeg convertit et recadre la vidéo. Whisper transcrit l’audio localement. Le premier usage de Whisper nécessite le téléchargement de son modèle.</p>
+          <div className="ve-info-icon"><HardDrive size={22}/></div><h2>Traitement sur votre PC</h2><p>FFmpeg convertit, recadre et incruste les sous-titres. Whisper transcrit l’audio localement. Le premier usage de Whisper nécessite le téléchargement de son modèle.</p>
           <div className="ve-check"><ShieldCheck size={17}/> Traitement local après installation</div>
           <button className="ve-refresh" onClick={checkWorker}><RefreshCw size={15}/> Vérifier la connexion</button>
-          <div className="ve-note"><strong>Limites actuelles</strong><span>Les sous-titres sont exportés en SRT séparé ; leur incrustation dans la vidéo et les styles animés seront ajoutés ensuite.</span></div>
+          <div className="ve-note"><strong>Styles disponibles</strong><span>Clean, Creator jaune et Minimal. Les sous-titres sont incrustés dans le MP4 final ; le rendu nécessite un nouvel encodage vidéo.</span></div>
         </aside>
       </div>
     </section>
