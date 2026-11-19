@@ -75,10 +75,27 @@ export default {
       if (!await hasValidMcpToken(request, env)) {
         return json({ error: "Unauthorized" }, 401)
       }
+      const origin = request.headers.get("origin")
+      if (origin) {
+        const allowedOrigins = (env.KREA_MCP_ALLOWED_ORIGINS || "")
+          .split(",")
+          .map(value => value.trim())
+          .filter(Boolean)
+        if (!allowedOrigins.includes(origin)) {
+          return json({ error: "Origin not allowed" }, 403)
+        }
+      }
+
       const contentType = request.headers.get("content-type") || ""
-      if (!contentType.toLowerCase().startsWith("application/json")) {
+      if (contentType.split(";")[0].trim().toLowerCase() !== "application/json") {
         return json({ error: "Unsupported media type" }, 415)
       }
+
+      const contentLength = Number(request.headers.get("content-length") || 0)
+      if (contentLength > 1_048_576) {
+        return json({ error: "Request body too large" }, 413)
+      }
+
       return addSecurityHeaders(await handleMcpRequest(request))
     }
 
