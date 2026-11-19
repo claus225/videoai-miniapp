@@ -71,4 +71,6 @@ test("POST /mcp rejects non-JSON content types after authentication", async () =
     body: "not-json",
   }), { KREA_MCP_TOKEN: "test-secret" })
   assert.equal(response.status, 415)
+  assert.equal(response.headers.get("cache-control"), "no-store")
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff")
 })
