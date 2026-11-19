@@ -13,6 +13,18 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
   headers: securityHeaders,
 })
 
+function addSecurityHeaders(response) {
+  const headers = new Headers(response.headers)
+  for (const [name, value] of Object.entries(securityHeaders)) {
+    if (name !== "content-type") headers.set(name, value)
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}
+
 async function hasValidMcpToken(request, env) {
   const expected = env.KREA_MCP_TOKEN
   const authorization = request.headers.get("authorization") || ""
@@ -67,7 +79,7 @@ export default {
       if (!contentType.toLowerCase().startsWith("application/json")) {
         return json({ error: "Unsupported media type" }, 415)
       }
-      return handleMcpRequest(request)
+      return addSecurityHeaders(await handleMcpRequest(request))
     }
 
     return json({ error: "Not found" }, 404)
