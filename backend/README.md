@@ -8,7 +8,9 @@ The React/Vite site remains a static GitHub Pages frontend.
 - Cloudflare Worker health endpoint: implemented.
 - D1 schema for social connections and scheduled posts: drafted.
 - Remote MCP Streamable HTTP route: read-only status tool implemented; not deployed.
-- MCP authentication: bearer-secret gate; configure a secret before use.
+- MCP authentication: bearer-secret gate with constant-time digest comparison; configure a secret before use.
+- MCP browser-origin allowlist: requests carrying an `Origin` header are rejected unless the exact origin is listed in `KREA_MCP_ALLOWED_ORIGINS`.
+- API responses include no-store and basic browser security headers; MCP accepts JSON requests only and applies a declared-body-size limit.
 - In-app Claude/OpenAI assistant screen: interface added; model calls are not active.
 - Claude and OpenAI API adapters: not implemented.
 - Social OAuth, token encryption, automatic publishing, analytics and comments: not implemented.
@@ -19,7 +21,7 @@ The API does not accept social passwords or OAuth tokens. The MCP tool currently
 
 The initial MCP tool is deliberately read-only. Before testing, set a long random `KREA_MCP_TOKEN` as a Cloudflare Worker secret. Never commit it to Git or put it in frontend code.
 
-The bearer-secret gate is an initial private test gate, not a substitute for full per-user OAuth authorization. Before production, add OAuth authorization, per-user scopes, audit logs, host/origin validation, and tool-level approvals.
+The bearer-secret gate is an initial private test gate, not a substitute for full per-user OAuth authorization. Set `KREA_MCP_TOKEN` as a Worker secret. If browser-based MCP clients are expected, configure `KREA_MCP_ALLOWED_ORIGINS` as a comma-separated list of exact trusted origins (scheme and host, including port when used). Requests without an `Origin` header remain available for non-browser MCP clients; requests that include an origin are denied unless it matches the allowlist exactly. Before production, add per-user OAuth authorization, per-user scopes, audit logs, host validation, and tool-level approvals.
 
 Claude supports remote custom MCP connectors on individual plans. ChatGPT's direct custom MCP connection is currently restricted by OpenAI to Business and Enterprise/Edu workspaces; Free users cannot connect this custom server directly. KREA can still integrate OpenAI models server-side through the OpenAI API, independently of ChatGPT plan access.
 
@@ -57,3 +59,15 @@ Do not deploy this foundation as a production publishing service. It is not yet 
 ## GitHub Pages
 
 The existing Pages workflow builds only the frontend. This Worker is deployed separately and is not activated by a frontend deployment.
+
+
+## Backend tests
+
+From the `backend` directory, run:
+
+```bash
+npm install
+npm test
+```
+
+The tests cover health status, missing/invalid MCP credentials, HTTP method and media-type checks, browser-origin allowlisting, and response security headers. The GitHub Actions workflow also runs the frontend build and backend tests on pushes and pull requests.
