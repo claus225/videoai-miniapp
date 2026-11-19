@@ -52,3 +52,23 @@ test("unknown routes return 404", async () => {
   const response = await worker.fetch(new Request(baseUrl + "/unknown"), {})
   assert.equal(response.status, 404)
 })
+
+test("API responses include no-store and basic security headers", async () => {
+  const response = await worker.fetch(new Request(baseUrl + "/health"), {})
+  assert.equal(response.headers.get("cache-control"), "no-store")
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff")
+  assert.equal(response.headers.get("x-frame-options"), "DENY")
+  assert.equal(response.headers.get("referrer-policy"), "no-referrer")
+})
+
+test("POST /mcp rejects non-JSON content types after authentication", async () => {
+  const response = await worker.fetch(new Request(baseUrl + "/mcp", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer test-secret",
+      "content-type": "text/plain",
+    },
+    body: "not-json",
+  }), { KREA_MCP_TOKEN: "test-secret" })
+  assert.equal(response.status, 415)
+})
