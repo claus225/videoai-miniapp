@@ -28,7 +28,9 @@ function addSecurityHeaders(response) {
 async function readBodyWithinLimit(request, maxBytes) {
   if (!request.body) return { body: new Uint8Array(), tooLarge: false }
 
-  const reader = request.clone().body.getReader()
+  // Read the original stream, not a clone: cancelling one branch of a
+  // tee'd stream can wait forever while the other branch remains unread.
+  const reader = request.body.getReader()
   const chunks = []
   let total = 0
 
@@ -132,7 +134,11 @@ export default {
         return json({ error: "Request body too large" }, 413)
       }
 
-      const mcpRequest = new Request(request, { body: limitedBody.body })
+      const mcpRequest = new Request(request.url, {
+        method: request.method,
+        headers: request.headers,
+        body: limitedBody.body,
+      })
       return addSecurityHeaders(await handleMcpRequest(mcpRequest))
     }
 
