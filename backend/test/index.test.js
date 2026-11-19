@@ -104,3 +104,17 @@ test("POST /mcp rejects JSON-like but invalid media types", async () => {
   }), { KREA_MCP_TOKEN: "test-secret" })
   assert.equal(response.status, 415)
 })
+
+
+test("POST /mcp rejects requests declaring a body larger than 1 MiB", async () => {
+  const response = await worker.fetch(new Request(baseUrl + "/mcp", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer test-secret",
+      "content-type": "application/json",
+      "content-length": "1048577",
+    },
+    body: "{}",
+  }), { KREA_MCP_TOKEN: "test-secret" })
+  assert.equal(response.status, 413)
+})
