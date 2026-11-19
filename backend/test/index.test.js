@@ -74,3 +74,33 @@ test("POST /mcp rejects non-JSON content types after authentication", async () =
   assert.equal(response.headers.get("cache-control"), "no-store")
   assert.equal(response.headers.get("x-content-type-options"), "nosniff")
 })
+
+
+test("POST /mcp rejects browser origins not on the configured allowlist", async () => {
+  const response = await worker.fetch(new Request(baseUrl + "/mcp", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer test-secret",
+      origin: "https://untrusted.example",
+      "content-type": "application/json",
+    },
+    body: "{}",
+  }), {
+    KREA_MCP_TOKEN: "test-secret",
+    KREA_MCP_ALLOWED_ORIGINS: "https://app.krea.example",
+  })
+  assert.equal(response.status, 403)
+  assert.equal(response.headers.get("cache-control"), "no-store")
+})
+
+test("POST /mcp rejects JSON-like but invalid media types", async () => {
+  const response = await worker.fetch(new Request(baseUrl + "/mcp", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer test-secret",
+      "content-type": "application/jsonp",
+    },
+    body: "{}",
+  }), { KREA_MCP_TOKEN: "test-secret" })
+  assert.equal(response.status, 415)
+})
