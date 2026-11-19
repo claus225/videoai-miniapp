@@ -118,3 +118,20 @@ test("POST /mcp rejects requests declaring a body larger than 1 MiB", async () =
   }), { KREA_MCP_TOKEN: "test-secret" })
   assert.equal(response.status, 413)
 })
+
+
+test("POST /mcp enforces the body limit even without a Content-Length header", async () => {
+  const oversizedBody = "x".repeat(1_048_577)
+  const request = new Request(baseUrl + "/mcp", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer test-secret",
+      "content-type": "application/json",
+    },
+    body: oversizedBody,
+  })
+  assert.equal(request.headers.has("content-length"), false)
+
+  const response = await worker.fetch(request, { KREA_MCP_TOKEN: "test-secret" })
+  assert.equal(response.status, 413)
+})
