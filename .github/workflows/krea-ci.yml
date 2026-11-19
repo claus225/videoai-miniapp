@@ -40,5 +40,27 @@ jobs:
           node-version: 20
       - name: Install backend dependencies
         run: npm install
+      - name: Report dependency audit findings
+        run: |
+          npm audit --json > /tmp/krea-npm-audit.json || true
+          node --input-type=commonjs -e '
+            const report = require("/tmp/krea-npm-audit.json");
+            const entries = Object.entries(report.vulnerabilities || {});
+            console.log("Dependency audit summary:", JSON.stringify(report.metadata?.vulnerabilities || {}));
+            for (const [name, item] of entries) {
+              console.log(JSON.stringify({
+                package: name,
+                severity: item.severity,
+                direct: item.isDirect,
+                range: item.range,
+                fixAvailable: item.fixAvailable,
+                advisories: (item.via || []).filter(v => typeof v === "object").map(v => ({
+                  title: v.title,
+                  url: v.url,
+                  range: v.range
+                }))
+              }));
+            }
+          '
       - name: Run backend tests
         run: npm test
