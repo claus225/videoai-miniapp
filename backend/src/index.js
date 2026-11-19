@@ -25,6 +25,37 @@ function addSecurityHeaders(response) {
   })
 }
 
+async function readBodyWithinLimit(request, maxBytes) {
+  if (!request.body) return { body: new Uint8Array(), tooLarge: false }
+
+  const reader = request.clone().body.getReader()
+  const chunks = []
+  let total = 0
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel()
+        return { body: null, tooLarge: true }
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  const body = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    body.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return { body, tooLarge: false }
+}
+
 async function hasValidMcpToken(request, env) {
   const expected = env.KREA_MCP_TOKEN
   const authorization = request.headers.get("authorization") || ""
@@ -96,7 +127,13 @@ export default {
         return json({ error: "Request body too large" }, 413)
       }
 
-      return addSecurityHeaders(await handleMcpRequest(request))
+      const limitedBody = await readBodyWithinLimit(request, 1_048_576)
+      if (limitedBody.tooLarge) {
+        return json({ error: "Request body too large" }, 413)
+      }
+
+      const mcpRequest = new Request(request, { body: limitedBody.body })
+      return addSecurityHeaders(await handleMcpRequest(mcpRequest))
     }
 
     return json({ error: "Not found" }, 404)
