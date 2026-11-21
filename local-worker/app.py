@@ -5,6 +5,8 @@ import secrets
 import hmac
 import shutil
 import subprocess
+import os
+import sys
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +29,12 @@ CAPTION_STYLES = {
 }
 
 app = FastAPI(title="KREA VIDEO ENGINE Local Worker", version="0.4.0")
-ALLOWED_ORIGINS = {"http://localhost:5173", "http://127.0.0.1:5173"}
+DEFAULT_ALLOWED_ORIGINS = {"http://localhost:5173", "http://127.0.0.1:5173"}
+ALLOWED_ORIGINS = DEFAULT_ALLOWED_ORIGINS | {
+    origin.strip().rstrip("/")
+    for origin in os.environ.get("KREA_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+}
 WORKER_TOKEN = secrets.token_urlsafe(32)
 PROTECTED_POST_PATHS = {"/api/render", "/api/transcribe", "/api/render-subtitled", "/api/preview-subtitled", "/api/avatar/generate"}
 app.add_middleware(
@@ -333,10 +340,6 @@ def download(job_id: str):
 
 
 # Avatar video generation (optional SadTalker installation)
-import os
-import sys
-from fastapi import APIRouter
-
 SADTALKER_DIR = Path(os.environ.get("SADTALKER_DIR", str(BASE / "SadTalker"))).resolve()
 SADTALKER_PYTHON = os.environ.get("SADTALKER_PYTHON", sys.executable)
 AVATAR_MAX_IMAGE_BYTES = 15 * 1024 * 1024
