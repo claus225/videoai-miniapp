@@ -390,22 +390,39 @@ async def generate_avatar_video(
         )
 
     job_id = uuid4().hex
+    if not ffmpeg_path():
+        raise HTTPException(status_code=503, detail="FFmpeg est nécessaire pour préparer l’audio de l’avatar.")
+    job_id = uuid4().hex
     portrait_path = INBOX / f"avatar-{job_id}{image_suffix}"
     audio_path = INBOX / f"avatar-{job_id}{audio_suffix}"
+    normalized_audio = TEMP / f"avatar-{job_id}.wav"
     result_dir = TEMP / f"avatar-{job_id}"
     output = OUTBOX / f"{job_id}.mp4"
     result_dir.mkdir(parents=True, exist_ok=True)
     try:
         save_avatar_upload(portrait, portrait_path, AVATAR_MAX_IMAGE_BYTES)
         save_avatar_upload(audio, audio_path, AVATAR_MAX_AUDIO_BYTES)
+
+        # SadTalker documents WAV/MP3 input. Normalize all accepted formats to mono PCM WAV.
+        normalize = subprocess.run(
+            [ffmpeg_path(), "-y", "-i", str(audio_path), "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(normalized_audio)],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+        if normalize.returncode != 0 or not normalized_audio.is_file() or normalized_audio.stat().st_size == 0:
+            raise HTTPException(status_code=422, detail="Impossible de lire ou convertir cet audio. Essayez un enregistrement WAV ou MP3 valide.")
+
         command = [
             SADTALKER_PYTHON,
             str(inference_script),
-            "--driven_audio", str(audio_path),
+            "--driven_audio", str(normalized_audio),
             "--source_image", str(portrait_path),
+            "--checkpoint_dir", str(checkpoints),
             "--result_dir", str(result_dir),
-            "--still",
-            "--preprocess", "full",
+            "--preprocess", "crop",
+            "--size", "256",
         ]
         try:
             result = subprocess.run(
@@ -418,7 +435,11 @@ async def generate_avatar_video(
             )
         except subprocess.TimeoutExpired:
             raise HTTPException(status_code=408, detail="La génération de l’avatar a dépassé 30 minutes.")
-        generated = sorted(result_dir.rglob("*.mp4"), key=lambda item: item.stat().st_mtime, reverse=True)
+        generated = sorted(
+            (item for item in result_dir.rglob("*.mp4") if item.is_file() and item.stat().st_size > 1024),
+            key=lambda item: item.stat().st_mtime,
+            reverse=True,
+        )
         if result.returncode != 0 or not generated:
             raise HTTPException(
                 status_code=422,
@@ -431,9 +452,12 @@ async def generate_avatar_video(
             "download_url": f"/api/download/{job_id}",
             "notice": "Vidéo générée localement. Signalez clairement qu’il s’agit d’un avatar IA.",
         }
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=408, detail="La préparation de l’avatar a dépassé le délai autorisé.")
     finally:
         portrait_path.unlink(missing_ok=True)
         audio_path.unlink(missing_ok=True)
+        normalized_audio.unlink(missing_ok=True)
         shutil.rmtree(result_dir, ignore_errors=True)
         await portrait.close()
         await audio.close()
