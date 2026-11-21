@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Activity, BarChart3, CalendarDays, Check, ChevronDown, Clock3,
   Facebook, FileText, HelpCircle, Home, Instagram, Layers3, Link2,
@@ -25,13 +25,29 @@ const navigation = [
 function App() {
   const [page, setPage] = useState('overview')
   const [mobileMenu, setMobileMenu] = useState(false)
-  const [posts, setPosts] = useState([])
+  const [posts, setPosts] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem('krea-studio-social-posts')
+      const parsed = saved ? JSON.parse(saved) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })
   const [notice, setNotice] = useState('')
   const [modal, setModal] = useState('')
   const [selectedChannels, setSelectedChannels] = useState(['instagram', 'facebook', 'youtube', 'tiktok'])
   const [content, setContent] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
   const [mediaName, setMediaName] = useState('')
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('krea-studio-social-posts', JSON.stringify(posts))
+    } catch {
+      // Le mode aperçu reste utilisable si le stockage du navigateur est indisponible.
+    }
+  }, [posts])
 
   const scheduledCount = posts.filter(post => post.status === 'scheduled').length
   const draftCount = posts.filter(post => post.status === 'draft').length
