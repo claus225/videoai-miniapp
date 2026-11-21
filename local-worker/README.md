@@ -33,6 +33,18 @@ Lancer KREA STUDIO avec `npm run dev`, ouvrir l'onglet KREA VIDEO ENGINE, choisi
 ## Modèle Whisper
 Le worker utilise faster-whisper avec le modèle `tiny`, sur CPU en précision int8 pour limiter la mémoire vive. Au premier lancement, le modèle est téléchargé et mis en cache ; une connexion Internet est donc nécessaire pour cette première récupération. Les transcriptions suivantes peuvent fonctionner hors ligne si le modèle reste dans le cache.
 
+## Avatar Studio (première intégration)
+
+L'onglet **AVATAR STUDIO** anime localement un portrait autorisé à partir d'un enregistrement audio français. Cette première version prend un portrait PNG/JPG et un audio WAV/MP3/M4A ; la saisie de texte avec synthèse vocale française n'est pas encore disponible.
+
+Le moteur optionnel SadTalker doit être installé dans un environnement Python séparé. Consultez [AVATAR_SETUP.md](AVATAR_SETUP.md) avant l'installation. Configurez `SADTALKER_DIR` vers le dépôt SadTalker et `SADTALKER_PYTHON` vers son interpréteur Python. Les modèles pré-entraînés doivent être installés localement.
+
+Routes :
+- `GET /api/avatar/health`
+- `POST /api/avatar/generate` (clé `X-Krea-Token` obligatoire)
+
+La génération reste locale et nécessite un PC suffisamment équipé. Elle n'a pas encore été testée sur une installation Windows complète.
+
 ## Limites et sécurité
 - Le modèle tiny privilégie la légèreté ; la qualité de transcription peut varier selon le son et l'accent.
 - Les sous-titres peuvent être exportés en SRT ou incrustés dans le MP4 avec trois styles ASS : Clean, Creator jaune et Minimal.
