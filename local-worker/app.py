@@ -29,7 +29,7 @@ CAPTION_STYLES = {
 app = FastAPI(title="KREA VIDEO ENGINE Local Worker", version="0.4.0")
 ALLOWED_ORIGINS = {"http://localhost:5173", "http://127.0.0.1:5173"}
 WORKER_TOKEN = secrets.token_urlsafe(32)
-PROTECTED_POST_PATHS = {"/api/render", "/api/transcribe", "/api/render-subtitled", "/api/preview-subtitled"}
+PROTECTED_POST_PATHS = {"/api/render", "/api/transcribe", "/api/render-subtitled", "/api/preview-subtitled", "/api/avatar/generate"}
 app.add_middleware(
     CORSMiddleware,
     allow_origins=sorted(ALLOWED_ORIGINS),
@@ -329,6 +329,115 @@ def download(job_id: str):
     if not output.is_file():
         raise HTTPException(status_code=404, detail="Fichier introuvable ou déjà supprimé.")
     return FileResponse(output, media_type="video/mp4", filename="krea-video.mp4")
+
+
+
+# Avatar video generation (optional SadTalker installation)
+import os
+import sys
+from fastapi import APIRouter
+
+SADTALKER_DIR = Path(os.environ.get("SADTALKER_DIR", str(BASE / "SadTalker"))).resolve()
+SADTALKER_PYTHON = os.environ.get("SADTALKER_PYTHON", sys.executable)
+AVATAR_MAX_IMAGE_BYTES = 15 * 1024 * 1024
+AVATAR_MAX_AUDIO_BYTES = 40 * 1024 * 1024
+AVATAR_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg"}
+AVATAR_AUDIO_SUFFIXES = {".wav", ".mp3", ".m4a"}
+
+@app.get("/api/avatar/health")
+def avatar_health():
+    inference_script = SADTALKER_DIR / "inference.py"
+    checkpoints = SADTALKER_DIR / "checkpoints"
+    return {
+        "engine": "SadTalker",
+        "installed": inference_script.is_file(),
+        "checkpoints_ready": checkpoints.is_dir() and any(checkpoints.iterdir()) if checkpoints.is_dir() else False,
+        "mode": "local",
+        "input": "portrait image + French audio file",
+    }
+
+def save_avatar_upload(upload: UploadFile, destination: Path, max_bytes: int):
+    total = 0
+    with destination.open("wb") as target:
+        while chunk := upload.file.read(1024 * 1024):
+            total += len(chunk)
+            if total > max_bytes:
+                destination.unlink(missing_ok=True)
+                raise HTTPException(status_code=413, detail="Fichier trop volumineux pour la génération d’avatar.")
+            target.write(chunk)
+    if total == 0:
+        destination.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail="Le fichier envoyé est vide.")
+    return total
+
+@app.post("/api/avatar/generate")
+async def generate_avatar_video(
+    portrait: UploadFile = File(...),
+    audio: UploadFile = File(...),
+):
+    image_suffix = Path(portrait.filename or "").suffix.lower()
+    audio_suffix = Path(audio.filename or "").suffix.lower()
+    if image_suffix not in AVATAR_IMAGE_SUFFIXES:
+        raise HTTPException(status_code=415, detail="Portrait accepté : PNG, JPG ou JPEG.")
+    if audio_suffix not in AVATAR_AUDIO_SUFFIXES:
+        raise HTTPException(status_code=415, detail="Audio accepté : WAV, MP3 ou M4A.")
+    inference_script = SADTALKER_DIR / "inference.py"
+    checkpoints = SADTALKER_DIR / "checkpoints"
+    if not inference_script.is_file() or not checkpoints.is_dir() or not any(checkpoints.iterdir()):
+        raise HTTPException(
+            status_code=503,
+            detail="SadTalker ou ses modèles ne sont pas installés. Consultez local-worker/AVATAR_SETUP.md.",
+        )
+
+    job_id = uuid4().hex
+    portrait_path = INBOX / f"avatar-{job_id}{image_suffix}"
+    audio_path = INBOX / f"avatar-{job_id}{audio_suffix}"
+    result_dir = TEMP / f"avatar-{job_id}"
+    output = OUTBOX / f"{job_id}.mp4"
+    result_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        save_avatar_upload(portrait, portrait_path, AVATAR_MAX_IMAGE_BYTES)
+        save_avatar_upload(audio, audio_path, AVATAR_MAX_AUDIO_BYTES)
+        command = [
+            SADTALKER_PYTHON,
+            str(inference_script),
+            "--driven_audio", str(audio_path),
+            "--source_image", str(portrait_path),
+            "--result_dir", str(result_dir),
+            "--still",
+            "--preprocess", "full",
+        ]
+        try:
+            result = subprocess.run(
+                command,
+                cwd=str(SADTALKER_DIR),
+                capture_output=True,
+                text=True,
+                timeout=1800,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            raise HTTPException(status_code=408, detail="La génération de l’avatar a dépassé 30 minutes.")
+        generated = sorted(result_dir.rglob("*.mp4"), key=lambda item: item.stat().st_mtime, reverse=True)
+        if result.returncode != 0 or not generated:
+            raise HTTPException(
+                status_code=422,
+                detail="SadTalker n’a pas produit de vidéo. Vérifiez son environnement Python, ses modèles et les ressources disponibles.",
+            )
+        shutil.copy2(generated[0], output)
+        return {
+            "job_id": job_id,
+            "status": "completed",
+            "download_url": f"/api/download/{job_id}",
+            "notice": "Vidéo générée localement. Signalez clairement qu’il s’agit d’un avatar IA.",
+        }
+    finally:
+        portrait_path.unlink(missing_ok=True)
+        audio_path.unlink(missing_ok=True)
+        shutil.rmtree(result_dir, ignore_errors=True)
+        await portrait.close()
+        await audio.close()
+
 
 if __name__ == "__main__":
     import uvicorn
